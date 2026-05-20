@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/theme_controller.dart';
 
 class ConfiguracoesView extends StatelessWidget {
@@ -9,11 +10,10 @@ class ConfiguracoesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
-
+      appBar: AppBar(title: const Text('Configuracoes')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
+          final double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
 
           return ListView(
             padding: EdgeInsets.symmetric(
@@ -22,7 +22,7 @@ class ConfiguracoesView extends StatelessWidget {
             ),
             children: [
               const Text(
-                'Aparência',
+                'Aparencia',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -31,35 +31,31 @@ class ConfiguracoesView extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  children: [
-                    RadioListTile<ThemeMode>(
-                      title: const Text('Seguir o Sistema'),
-                      value: ThemeMode.system,
-                      groupValue: themeController.themeMode,
-                      onChanged: (ThemeMode? valor) {
-                        if (valor != null) themeController.mudarTema(valor);
-                      },
-                    ),
-                    const Divider(height: 1),
-                    RadioListTile<ThemeMode>(
-                      title: const Text('Modo Claro'),
-                      value: ThemeMode.light,
-                      groupValue: themeController.themeMode,
-                      onChanged: (ThemeMode? valor) {
-                        if (valor != null) themeController.mudarTema(valor);
-                      },
-                    ),
-                    const Divider(height: 1),
-                    RadioListTile<ThemeMode>(
-                      title: const Text('Modo Escuro'),
-                      value: ThemeMode.dark,
-                      groupValue: themeController.themeMode,
-                      onChanged: (ThemeMode? valor) {
-                        if (valor != null) themeController.mudarTema(valor);
-                      },
-                    ),
-                  ],
+                child: RadioGroup<ThemeMode>(
+                  groupValue: themeController.themeMode,
+                  onChanged: (ThemeMode? valor) {
+                    if (valor != null) {
+                      themeController.mudarTema(valor);
+                    }
+                  },
+                  child: const Column(
+                    children: [
+                      RadioListTile<ThemeMode>(
+                        title: Text('Seguir o Sistema'),
+                        value: ThemeMode.system,
+                      ),
+                      Divider(height: 1),
+                      RadioListTile<ThemeMode>(
+                        title: Text('Modo Claro'),
+                        value: ThemeMode.light,
+                      ),
+                      Divider(height: 1),
+                      RadioListTile<ThemeMode>(
+                        title: Text('Modo Escuro'),
+                        value: ThemeMode.dark,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

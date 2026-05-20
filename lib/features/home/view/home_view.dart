@@ -11,11 +11,14 @@ class HomeView extends StatelessWidget {
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          // Ajuste de espaçamento responsivo 
-          double horizontalPadding = constraints.maxWidth > 600 ? 100 : 20;
+          final double horizontalPadding =
+              constraints.maxWidth > 600 ? 100 : 20;
 
           return SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 30),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: 30,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -25,18 +28,14 @@ class HomeView extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-
-                // Cards de Resumo
                 _buildStatusCard(
                   context,
-                  title: 'Progresso Diário',
+                  title: 'Progresso Diario',
                   value: '5.2 km',
                   icon: Icons.directions_run,
                   color: Colors.orange,
                 ),
-
                 const SizedBox(height: 20),
-
                 _buildStatusCard(
                   context,
                   title: 'Alerta de Inatividade',
@@ -44,25 +43,26 @@ class HomeView extends StatelessWidget {
                   icon: Icons.timer,
                   color: Colors.blue,
                 ),
-
                 const SizedBox(height: 40),
-
-                // Botões de Navegação com ROTAS NOMEADAS
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        // Chama a rota de histórico pelo nome configurado no main.dart
-                        onPressed: () => Navigator.pushNamed(context, '/historico_treinos'),
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          '/historico_treinos',
+                        ),
                         icon: const Icon(Icons.history),
-                        label: const Text('Ver Histórico'),
+                        label: const Text('Ver Historico'),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton.icon(
-                        // Chama a rota de configurações pelo nome configurado no main.dart
-                        onPressed: () => Navigator.pushNamed(context, '/configuracoes'),
+                        onPressed: () => Navigator.pushNamed(
+                          context,
+                          '/configuracoes',
+                        ),
                         icon: const Icon(Icons.settings),
                         label: const Text('Configurar'),
                       ),
@@ -77,15 +77,21 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusCard(BuildContext context, 
-      {required String title, required String value, required IconData icon, required Color color}) {
+  Widget _buildStatusCard(
+    BuildContext context, {
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
     return Card(
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
       child: ListTile(
         leading: CircleAvatar(
-          // Atualizado para withValues para remover o aviso amarelo (warning)
-          backgroundColor: color.withValues(alpha: 0.2), 
+          backgroundColor: color.withValues(alpha: 0.2),
           child: Icon(icon, color: color),
         ),
         title: Text(title),
