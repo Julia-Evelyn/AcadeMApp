@@ -84,7 +84,6 @@ class HomeView extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
       child: ListTile(
         leading: CircleAvatar(
-          // Atualizado para withValues para remover o aviso amarelo (warning)
           backgroundColor: color.withValues(alpha: 0.2), 
           child: Icon(icon, color: color),
         ),

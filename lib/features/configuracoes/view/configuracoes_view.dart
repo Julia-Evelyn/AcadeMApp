@@ -20,45 +20,60 @@ class ConfiguracoesView extends StatelessWidget {
               horizontal: margemLateral,
               vertical: 20,
             ),
+
             children: [
               const Text(
                 'Aparência',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+
               const SizedBox(height: 10),
+
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
+
                 child: Column(
                   children: [
                     RadioListTile<ThemeMode>(
                       title: const Text('Seguir o Sistema'),
                       value: ThemeMode.system,
+                      // ignore: deprecated_member_use
                       groupValue: themeController.themeMode,
+                      // ignore: deprecated_member_use
                       onChanged: (ThemeMode? valor) {
                         if (valor != null) themeController.mudarTema(valor);
                       },
                     ),
+
                     const Divider(height: 1),
+
                     RadioListTile<ThemeMode>(
                       title: const Text('Modo Claro'),
                       value: ThemeMode.light,
+                      // ignore: deprecated_member_use
                       groupValue: themeController.themeMode,
+                      // ignore: deprecated_member_use
                       onChanged: (ThemeMode? valor) {
                         if (valor != null) themeController.mudarTema(valor);
                       },
                     ),
+
                     const Divider(height: 1),
+
                     RadioListTile<ThemeMode>(
                       title: const Text('Modo Escuro'),
                       value: ThemeMode.dark,
+                      // ignore: deprecated_member_use
                       groupValue: themeController.themeMode,
+                      // ignore: deprecated_member_use
                       onChanged: (ThemeMode? valor) {
                         if (valor != null) themeController.mudarTema(valor);
                       },
                     ),
+                    
                   ],
                 ),
               ),
