@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'features/home/view/home_view.dart'; 
 import 'features/configuracoes/view/configuracoes_view.dart';
+import 'features/historico_treinos/view/historico_treinos_view';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   final themeController = ThemeController();
-
+  
   runApp(MyApp(themeController: themeController));
 }
 
@@ -31,20 +33,12 @@ class MyApp extends StatelessWidget {
 
           initialRoute: '/home',
           routes: {
-            '/home': (context) => Scaffold(
-              appBar: AppBar(title: const Text('Dashboard')),
-              body: Center(
-                child: ElevatedButton.icon(
-                  onPressed: () =>
-                      Navigator.pushNamed(context, '/configuracoes'),
-                  icon: const Icon(Icons.settings),
-                  label: const Text('Ir para Configurações'),
-                ),
-              ),
-            ),
-
+            '/home': (context) => const HomeView(), 
+            
             '/configuracoes': (context) =>
                 ConfiguracoesView(themeController: themeController),
+                
+            '/historico_treinos': (context) => const HistoricoView(),
           },
         );
       },
