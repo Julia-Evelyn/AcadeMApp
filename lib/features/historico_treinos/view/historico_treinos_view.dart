@@ -1,0 +1,33 @@
+import 'package:flutter/material.dart';
+
+class HistoricoView extends StatelessWidget {
+  const HistoricoView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Historico de Treinos'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history,
+              size: 80,
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Nenhum treino registrado ainda.',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 10),
+            const Text('Seus treinos finalizados aparecerao aqui.'),
+          ],
+        ),
+      ),
+    );
+  }
+}
