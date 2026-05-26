@@ -7,7 +7,7 @@ class HistoricoView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Histórico de Treinos'),
+        title: const Text('Historico de Treinos'),
       ),
       body: Center(
         child: Column(
@@ -24,7 +24,7 @@ class HistoricoView extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 10),
-            const Text('Seus treinos finalizados aparecerão aqui.'),
+            const Text('Seus treinos finalizados aparecerao aqui.'),
           ],
         ),
       ),
