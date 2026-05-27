@@ -1,22 +1,17 @@
-import '../../../core/database_helper.dart';
 import '../model/atividade_model.dart';
+import '../service/atividade_storage_service.dart';
 
 class AtividadeRepository {
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  AtividadeRepository({AtividadeStorageService? storageService})
+    : _storageService = storageService ?? SqfliteAtividadeStorageService();
+
+  final AtividadeStorageService _storageService;
 
   Future<int> salvarAtividade(AtividadeModel atividade) async {
-    final db = await _dbHelper.inicializarBanco();
-
-    return await db.insert('RegistroAtividade', atividade.toMap());
+    return _storageService.salvarAtividade(atividade);
   }
 
   Future<List<AtividadeModel>> buscarTodasAtividades() async {
-    final db = await _dbHelper.inicializarBanco();
-
-    final List<Map<String, dynamic>> listaDoBanco = await db.query(
-      'RegistroAtividade',
-    );
-
-    return listaDoBanco.map((map) => AtividadeModel.fromMap(map)).toList();
+    return _storageService.buscarTodasAtividades();
   }
 }

@@ -1,27 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
+import 'core/layout/main_layout.dart';
+import 'core/services/firebase/firebase_bootstrap_service.dart';
+import 'core/services/media/profile_image_picker_service.dart';
+import 'core/services/preferences/app_preferences_service.dart';
+import 'core/services/preferences/key_value_store.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/configuracoes/view/configuracoes_view.dart';
 import 'features/historico_treinos/view/historico_treinos_view.dart';
-import 'core/layout/main_layout.dart';
+import 'firebase_options.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  final preferencesStore = await SharedPreferencesStore.create();
+  final preferencesService = AppPreferencesService(preferencesStore);
 
-  final themeController = ThemeController();
+  await FirebaseBootstrapService().initialize(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
-  runApp(MyApp(themeController: themeController));
+  final themeController = ThemeController(
+    preferencesService: preferencesService,
+    initialThemeMode: await preferencesService.loadThemeMode(),
+    initialAccentColor: Color(await preferencesService.loadAccentColorValue()),
+  );
+
+  runApp(
+    MyApp(
+      themeController: themeController,
+      preferencesService: preferencesService,
+      profileImagePickerService: DeviceProfileImagePickerService(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  final ThemeController themeController;
+  const MyApp({
+    super.key,
+    required this.themeController,
+    required this.preferencesService,
+    required this.profileImagePickerService,
+  });
 
-  const MyApp({super.key, required this.themeController});
+  final ThemeController themeController;
+  final AppPreferencesService preferencesService;
+  final ProfileImagePickerService profileImagePickerService;
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +56,15 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'AcadeMApp',
-
           theme: AppTheme.getLightTheme(themeController.corDestaque),
           darkTheme: AppTheme.getDarkTheme(themeController.corDestaque),
           themeMode: themeController.themeMode,
-
           initialRoute: '/home',
           routes: {
-            '/home': (context) => const MainLayout(),
+            '/home': (context) => MainLayout(
+              preferencesService: preferencesService,
+              profileImagePickerService: profileImagePickerService,
+            ),
             '/configuracoes': (context) =>
                 ConfiguracoesView(themeController: themeController),
             '/historico_treinos': (context) => const HistoricoView(),

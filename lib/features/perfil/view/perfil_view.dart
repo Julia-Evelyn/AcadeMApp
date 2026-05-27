@@ -1,59 +1,15 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class PerfilView extends StatefulWidget {
-  const PerfilView({super.key});
+import '../controller/perfil_controller.dart';
 
-  @override
-  State<PerfilView> createState() => _PerfilViewState();
-}
+class PerfilView extends StatelessWidget {
+  const PerfilView({super.key, required this.controller});
 
-class _PerfilViewState extends State<PerfilView> {
-  bool _estaEditando = false;
+  final PerfilController controller;
 
-  final _nomeController = TextEditingController();
-  final _sobrenomeController = TextEditingController();
-  final _pesoController = TextEditingController();
-  final _alturaController = TextEditingController();
-
-  File? _imagemDoPerfil;
-  final _picker = ImagePicker();
-
-  static const _chaveNome = 'perfil_nome';
-  static const _chaveSobrenome = 'perfil_sobrenome';
-  static const _chavePeso = 'perfil_peso';
-  static const _chaveAltura = 'perfil_altura';
-  static const _chaveCaminhoImagem = 'perfil_imagem_caminho';
-
-  @override
-  void initState() {
-    super.initState();
-    _carregarDadosSalvos();
-  }
-
-  @override
-  void dispose() {
-    _nomeController.dispose();
-    _sobrenomeController.dispose();
-    _pesoController.dispose();
-    _alturaController.dispose();
-    super.dispose();
-  }
-
-  // Lógica da fotinha de perfil
-  Future<void> _pegarImagem(ImageSource source) async {
-    final pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _imagemDoPerfil = File(pickedFile.path);
-      });
-    }
-  }
-
-  void _mostrarOpcoesDeImagem() {
-    showModalBottomSheet(
+  Future<void> _mostrarOpcoesDeImagem(BuildContext context) async {
+    await showModalBottomSheet<void>(
       context: context,
       builder: (context) {
         return SafeArea(
@@ -64,7 +20,7 @@ class _PerfilViewState extends State<PerfilView> {
                 title: const Text('Tirar Nova Foto'),
                 onTap: () {
                   Navigator.pop(context);
-                  _pegarImagem(ImageSource.camera);
+                  controller.pegarImagem(ImageSource.camera);
                 },
               ),
               ListTile(
@@ -72,7 +28,7 @@ class _PerfilViewState extends State<PerfilView> {
                 title: const Text('Escolher da Galeria'),
                 onTap: () {
                   Navigator.pop(context);
-                  _pegarImagem(ImageSource.gallery);
+                  controller.pegarImagem(ImageSource.gallery);
                 },
               ),
             ],
@@ -82,214 +38,180 @@ class _PerfilViewState extends State<PerfilView> {
     );
   }
 
-  // Lógica do SharedPreferences (salvar local)
-  Future<void> _carregarDadosSalvos() async {
-    final prefs = await SharedPreferences.getInstance();
-    _nomeController.text = prefs.getString(_chaveNome) ?? '';
-    _sobrenomeController.text = prefs.getString(_chaveSobrenome) ?? '';
-    _pesoController.text = prefs.getString(_chavePeso) ?? '';
-    _alturaController.text = prefs.getString(_chaveAltura) ?? '';
+  Future<void> _salvarPerfil(BuildContext context) async {
+    await controller.salvarPerfil();
 
-    final caminhoImagem = prefs.getString(_chaveCaminhoImagem);
-    if (caminhoImagem != null) {
-      setState(() {
-        _imagemDoPerfil = File(caminhoImagem);
-      });
-    }
-  }
-
-  Future<void> _salvarPerfil() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_chaveNome, _nomeController.text);
-    await prefs.setString(_chaveSobrenome, _sobrenomeController.text);
-    await prefs.setString(_chavePeso, _pesoController.text);
-    await prefs.setString(_chaveAltura, _alturaController.text);
-
-    if (_imagemDoPerfil != null) {
-      await prefs.setString(_chaveCaminhoImagem, _imagemDoPerfil!.path);
-    }
-
-    if (mounted) {
+    if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil atualizado com sucesso!')),
       );
-
-      setState(() {
-        _estaEditando = false;
-      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final margemLateral = constraints.maxWidth > 600 ? 100.0 : 20.0;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: margemLateral,
-            vertical: 30,
-          ),
-          child: Column(
-            children: [
-              // Foto de perfil
-              Stack(
-                alignment: Alignment.bottomRight,
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: margemLateral,
+                vertical: 30,
+              ),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).primaryColor.withValues(alpha: 0.1),
-                    backgroundImage: _imagemDoPerfil != null
-                        ? FileImage(_imagemDoPerfil!)
-                        : null,
-                    child: _imagemDoPerfil == null
-                        ? Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Theme.of(context).primaryColor,
-                          )
-                        : null,
-                  ),
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: _estaEditando
-                        ? Theme.of(context).primaryColor
-                        : Theme.of(context).colorScheme.secondary,
-                    child: IconButton(
-                      icon: Icon(
-                        _estaEditando ? Icons.camera_alt : Icons.edit,
-                        color: Colors.white,
-                        size: 20,
+                  Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).primaryColor.withValues(alpha: 0.1),
+                        backgroundImage: controller.imagemDoPerfil != null
+                            ? FileImage(controller.imagemDoPerfil!)
+                            : null,
+                        child: controller.imagemDoPerfil == null
+                            ? Icon(
+                                Icons.person,
+                                size: 60,
+                                color: Theme.of(context).primaryColor,
+                              )
+                            : null,
                       ),
-                      onPressed: () {
-                        if (!_estaEditando) {
-                          setState(() {
-                            _estaEditando = true;
-                          });
-                        } else {
-                          _mostrarOpcoesDeImagem();
-                        }
-                      },
-                    ),
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor: controller.estaEditando
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).colorScheme.secondary,
+                        child: IconButton(
+                          icon: Icon(
+                            controller.estaEditando
+                                ? Icons.camera_alt
+                                : Icons.edit,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            if (!controller.estaEditando) {
+                              controller.iniciarEdicao();
+                            } else {
+                              _mostrarOpcoesDeImagem(context);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 30),
+                  if (controller.estaEditando) ...[
+                    TextFormField(
+                      controller: controller.nomeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Nome',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.badge),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    TextFormField(
+                      controller: controller.sobrenomeController,
+                      decoration: const InputDecoration(
+                        labelText: 'Sobrenome',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.badge_outlined),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: controller.pesoController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Peso (kg)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.monitor_weight),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: TextFormField(
+                            controller: controller.alturaController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Altura (cm)',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.height),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () => _salvarPerfil(context),
+                        child: const Text(
+                          'Salvar Alteracoes',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ] else ...[
+                    _buildCardLeitura(
+                      context: context,
+                      titulo: 'Nome Completo',
+                      valor: controller.nomeCompleto,
+                      icone: Icons.badge,
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildCardLeitura(
+                            context: context,
+                            titulo: 'Peso Atual',
+                            valor: controller.pesoFormatado,
+                            icone: Icons.monitor_weight,
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: _buildCardLeitura(
+                            context: context,
+                            titulo: 'Altura',
+                            valor: controller.alturaFormatada,
+                            icone: Icons.height,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
-              const SizedBox(height: 30),
-
-              // Tela de Perfil - Modo leitura e edição
-              if (_estaEditando) ...[
-                // Modo Edição
-                TextFormField(
-                  controller: _nomeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nome',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.badge),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                TextFormField(
-                  controller: _sobrenomeController,
-                  decoration: const InputDecoration(
-                    labelText: 'Sobrenome',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.badge_outlined),
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _pesoController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Peso (kg)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.monitor_weight),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _alturaController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Altura (cm)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.height),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _salvarPerfil,
-                    child: const Text(
-                      'Salvar Alterações',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                ),
-              ] else ...[
-                
-                // Modo Leitura
-                _buildCardLeitura(
-                  titulo: 'Nome Completo',
-                  // Junta o nome e o sobrenome, se tiver vazio mostra que não foi informado
-                  valor: '${_nomeController.text} ${_sobrenomeController.text}'
-                      .trim(),
-                  icone: Icons.badge,
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildCardLeitura(
-                        titulo: 'Peso Atual',
-                        valor: _pesoController.text.isNotEmpty
-                            ? '${_pesoController.text} kg'
-                            : '',
-                        icone: Icons.monitor_weight,
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: _buildCardLeitura(
-                        titulo: 'Altura',
-                        valor: _alturaController.text.isNotEmpty
-                            ? '${_alturaController.text} cm'
-                            : '',
-                        icone: Icons.height,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  // Widget pro modo leitura
   Widget _buildCardLeitura({
+    required BuildContext context,
     required String titulo,
     required String valor,
     required IconData icone,
   }) {
-    final valorFinal = valor.isEmpty ? 'Não informado' : valor;
-
-    // Descobre se o modo escuro está ativado para ajustar a transparência da borda
+    final valorFinal = valor.isEmpty ? 'Nao informado' : valor;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(

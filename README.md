@@ -16,8 +16,22 @@ Os tokens abaixo documentam o estado visual atual do app e servem como base para
 
 - Flutter
 - Material 3
+- `firebase_core`
+- `cloud_firestore`
 - `shared_preferences`
 - `sqflite`
+
+## Servicos da Sprint
+
+Para concluir a sprint de servicos com o menor numero de mudancas, o projeto passou a concentrar integracoes externas em uma camada dedicada:
+
+- `FirebaseBootstrapService`: inicializacao do Firebase no startup.
+- `AppPreferencesService`: persistencia local de tema, cor de destaque, alerta e perfil.
+- `AlarmAudioService`: reproducao do alarme de inatividade.
+- `ProfileImagePickerService`: selecao de imagem do perfil.
+- `AtividadeStorageService`: persistencia local de atividades com `sqflite`.
+
+Tambem foram criados controllers para `Home` e `Perfil` para reduzir logica de negocio dentro das telas sem introduzir Provider.
 
 ## Arquivos-Chave
 

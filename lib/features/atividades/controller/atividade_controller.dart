@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+
 import '../model/atividade_model.dart';
 import '../repository/atividade_repository.dart';
 
 class AtividadeController extends ChangeNotifier {
-  final AtividadeRepository _repository = AtividadeRepository();
+  AtividadeController({AtividadeRepository? repository})
+    : _repository = repository ?? AtividadeRepository();
+
+  final AtividadeRepository _repository;
 
   List<AtividadeModel> atividades = [];
 
   Future<void> carregarAtividades() async {
     atividades = await _repository.buscarTodasAtividades();
-
     notifyListeners();
   }
 
@@ -20,7 +23,6 @@ class AtividadeController extends ChangeNotifier {
     );
 
     await _repository.salvarAtividade(novaAtividade);
-
     await carregarAtividades();
   }
 }

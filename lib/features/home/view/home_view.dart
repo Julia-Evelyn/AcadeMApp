@@ -1,110 +1,50 @@
-import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:audioplayers/audioplayers.dart';
+
+import '../controller/home_controller.dart';
 
 class HomeView extends StatefulWidget {
-  const HomeView({super.key});
+  const HomeView({super.key, required this.controller});
+
+  final HomeController controller;
 
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
-  String _nomeUsuario = 'Atleta';
-
-  // Variáveis do temporizador
-  Timer? _timer;
-  int _minutosEscolhidos = 45;
-  int _tempoRestanteSegundos = 45 * 60;
-  bool _estaRodando = false;
-
-  // Controla o áudio
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _dialogAberto = false;
 
   @override
   void initState() {
     super.initState();
-    _carregarNomeUsuario();
+    widget.controller.addListener(_escutarAlertaDeMovimento);
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _audioPlayer.dispose(); // Libera a memória do áudio quando fecha a tela
+    widget.controller.removeListener(_escutarAlertaDeMovimento);
     super.dispose();
   }
 
-  Future<void> _carregarNomeUsuario() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _nomeUsuario = prefs.getString('perfil_nome') ?? 'Atleta';
-      if (_nomeUsuario.isEmpty) _nomeUsuario = 'Atleta';
-    });
-  }
-
-  // Lógica do áudio
-  Future<void> _tocarAlarme() async {
-    // Configura para tocar em looping até o usuário desligar o alarme
-    _audioPlayer.setReleaseMode(ReleaseMode.loop);
-    // Busca o arquivo na pasta assets
-    await _audioPlayer.play(AssetSource('audio/alarme.mp3'));
-  }
-
-  Future<void> _pararAlarme() async {
-    await _audioPlayer.stop();
-  }
-
-  // Lógica do alerta
-  void _iniciarOuPausarTimer() {
-    if (_estaRodando) {
-      _timer?.cancel();
-      setState(() => _estaRodando = false);
-    } else {
-      setState(() => _estaRodando = true);
-      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          if (_tempoRestanteSegundos > 0) {
-            _tempoRestanteSegundos--;
-          } else {
-            // caso o tempo acabe
-            _timer?.cancel();
-            _estaRodando = false;
-            _tempoRestanteSegundos = _minutosEscolhidos * 60; // Reseta o texto
-            _tocarAlarme();
-            _mostrarAlertaDeMovimento();
-          }
-        });
-      });
+  void _escutarAlertaDeMovimento() {
+    if (!mounted || _dialogAberto || !widget.controller.movimentoPendente) {
+      return;
     }
-  }
 
-  void _resetarTimer() {
-    _timer?.cancel();
-    _pararAlarme(); // Faz com que o alarme pare se o usuário zerar o coiso
-    setState(() {
-      _estaRodando = false;
-      _tempoRestanteSegundos = _minutosEscolhidos * 60;
+    _dialogAberto = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _mostrarAlertaDeMovimento();
+      _dialogAberto = false;
     });
   }
 
-  void _mudarTempo(int novosMinutos) {
-    _timer?.cancel();
-    setState(() {
-      _minutosEscolhidos = novosMinutos;
-      _tempoRestanteSegundos = _minutosEscolhidos * 60;
-      _estaRodando = false;
-    });
-  }
-
-  // Popup do scroll do tempo do alerta
-  void _mostrarSeletorDeTempo() {
-    showModalBottomSheet(
+  Future<void> _mostrarSeletorDeTempo() async {
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (BuildContext context) {
+      builder: (context) {
         return Container(
           height: 350,
           decoration: BoxDecoration(
@@ -129,7 +69,6 @@ class _HomeViewState extends State<HomeView> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              // Cabeçalho
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -152,16 +91,14 @@ class _HomeViewState extends State<HomeView> {
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       onPressed: () => Navigator.pop(context),
-                      child: const Text('Concluído'),
+                      child: const Text('Concluido'),
                     ),
                   ],
                 ),
               ),
               const Divider(height: 20),
-              // A Roleta do IOS
               Expanded(
                 child: CupertinoTheme(
-                  // Faz o texto do scroll seguir as cores do tema
                   data: CupertinoThemeData(
                     textTheme: CupertinoTextThemeData(
                       pickerTextStyle: TextStyle(
@@ -172,16 +109,21 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   child: CupertinoTimerPicker(
                     mode: CupertinoTimerPickerMode.hm,
-                    initialTimerDuration: Duration(minutes: _minutosEscolhidos),
-                    onTimerDurationChanged: (Duration novaDuracao) {
-                      int minutosTotais = novaDuracao.inMinutes;
-                      if (minutosTotais == 0) minutosTotais = 1;
-                      _mudarTempo(minutosTotais);
+                    initialTimerDuration: Duration(
+                      minutes: widget.controller.minutosEscolhidos,
+                    ),
+                    onTimerDurationChanged: (novaDuracao) {
+                      var minutosTotais = novaDuracao.inMinutes;
+                      if (minutosTotais == 0) {
+                        minutosTotais = 1;
+                      }
+
+                      widget.controller.mudarTempo(minutosTotais);
                     },
                   ),
                 ),
               ),
-              const SizedBox(height: 20), // Respiro visual no final
+              const SizedBox(height: 20),
             ],
           ),
         );
@@ -189,11 +131,10 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // Alerta que para o som
-  void _mostrarAlertaDeMovimento() {
-    showDialog(
+  Future<void> _mostrarAlertaDeMovimento() {
+    return showDialog<void>(
       context: context,
-      barrierDismissible: false, // Block o clique fora do popup
+      barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -203,19 +144,18 @@ class _HomeViewState extends State<HomeView> {
             children: [
               Icon(Icons.directions_run, color: Colors.orange, size: 30),
               SizedBox(width: 10),
-              Text('Atenção!'),
+              Text('Atencao!'),
             ],
           ),
           content: const Text(
-            'Está na hora de se mexer!\nVocê atingiu seu limite de inatividade.',
+            'Esta na hora de se mexer!\nVoce atingiu seu limite de inatividade.',
             style: TextStyle(fontSize: 16),
           ),
           actions: [
             ElevatedButton(
-              onPressed: () {
-                _pararAlarme(); // Desliga o som do alarme
+              onPressed: () async {
                 Navigator.pop(context);
-                _iniciarOuPausarTimer(); // Reinicia a contagem
+                await widget.controller.confirmarAlertaDeMovimento();
               },
               child: const Text('Entendido!'),
             ),
@@ -225,47 +165,44 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  String get _tempoFormatado {
-    int minutos = _tempoRestanteSegundos ~/ 60;
-    int segundos = _tempoRestanteSegundos % 60;
-    return '${minutos.toString().padLeft(2, '0')}:${segundos.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final double horizontalPadding = constraints.maxWidth > 600 ? 100 : 20;
+    return ListenableBuilder(
+      listenable: widget.controller,
+      builder: (context, child) {
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final horizontalPadding = constraints.maxWidth > 600 ? 100.0 : 20.0;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: 30,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Bem-Vindo, $_nomeUsuario!',
-                style: Theme.of(
-                  context,
-                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: 30,
               ),
-              const SizedBox(height: 10),
-              const Text('Pronto para combater o sedentarismo hoje?'),
-              const SizedBox(height: 30),
-
-              _buildCardGPS(context),
-              const SizedBox(height: 20),
-              _buildCardInatividade(context),
-            ],
-          ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Bem-Vindo, ${widget.controller.nomeUsuario}!',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text('Pronto para combater o sedentarismo hoje?'),
+                  const SizedBox(height: 30),
+                  _buildCardGPS(context),
+                  const SizedBox(height: 20),
+                  _buildCardInatividade(context),
+                ],
+              ),
+            );
+          },
         );
       },
     );
   }
 
-  // Cardezinho do GPS (vai ser ajustado no futuro)
   Widget _buildCardGPS(BuildContext context) {
     return Card(
       elevation: 4,
@@ -276,7 +213,7 @@ class _HomeViewState extends State<HomeView> {
           backgroundColor: Colors.orange.withValues(alpha: 0.2),
           child: const Icon(Icons.location_on, color: Colors.orange),
         ),
-        title: const Text('Distância Percorrida'),
+        title: const Text('Distancia Percorrida'),
         subtitle: const Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -291,7 +228,7 @@ class _HomeViewState extends State<HomeView> {
             ),
             SizedBox(height: 5),
             Text(
-              'O rastreamento via GPS será programado depois...',
+              'O rastreamento via GPS sera programado depois...',
               style: TextStyle(fontSize: 12),
             ),
           ],
@@ -300,20 +237,15 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // Cardezinho do alerta de inatividade
   Widget _buildCardInatividade(BuildContext context) {
-    int horasEscolhidas = _minutosEscolhidos ~/ 60;
-    int minEscolhidos = _minutosEscolhidos % 60;
-    String textoDoBotao = horasEscolhidas > 0
-        ? '${horasEscolhidas}h ${minEscolhidos}min'
-        : '$minEscolhidos min';
+    final controller = widget.controller;
 
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: BorderSide(
-          color: _estaRodando
+          color: controller.estaRodando
               ? Colors.blue.withValues(alpha: 0.5)
               : Colors.transparent,
           width: 2,
@@ -337,10 +269,8 @@ class _HomeViewState extends State<HomeView> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-
-                // parte de cima do card
                 InkWell(
-                  onTap: _estaRodando ? null : _mostrarSeletorDeTempo,
+                  onTap: controller.estaRodando ? null : _mostrarSeletorDeTempo,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
@@ -348,7 +278,7 @@ class _HomeViewState extends State<HomeView> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: _estaRodando
+                      color: controller.estaRodando
                           ? Theme.of(
                               context,
                             ).disabledColor.withValues(alpha: 0.1)
@@ -358,21 +288,21 @@ class _HomeViewState extends State<HomeView> {
                     child: Row(
                       children: [
                         Text(
-                          textoDoBotao,
+                          controller.textoDoBotaoTempo,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: _estaRodando
+                            color: controller.estaRodando
                                 ? Theme.of(context).disabledColor
-                                : Theme.of(context)
-                                      .colorScheme
-                                      .onPrimaryContainer, 
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
                           ),
                         ),
                         const SizedBox(width: 6),
                         Icon(
                           Icons.edit,
                           size: 16,
-                          color: _estaRodando
+                          color: controller.estaRodando
                               ? Theme.of(context).disabledColor
                               : Theme.of(
                                   context,
@@ -387,7 +317,7 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(height: 20),
             Center(
               child: Text(
-                _tempoFormatado,
+                controller.tempoFormatado,
                 style: const TextStyle(
                   fontSize: 48,
                   fontWeight: FontWeight.bold,
@@ -400,24 +330,29 @@ class _HomeViewState extends State<HomeView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton.icon(
-                  onPressed: _iniciarOuPausarTimer,
+                  onPressed: controller.iniciarOuPausarTimer,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _estaRodando ? Colors.amber : Colors.blue,
+                    backgroundColor: controller.estaRodando
+                        ? Colors.amber
+                        : Colors.blue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 12,
                     ),
                   ),
-                  icon: Icon(_estaRodando ? Icons.pause : Icons.play_arrow),
-                  label: Text(_estaRodando ? 'Pausar' : 'Iniciar'),
+                  icon: Icon(
+                    controller.estaRodando ? Icons.pause : Icons.play_arrow,
+                  ),
+                  label: Text(controller.estaRodando ? 'Pausar' : 'Iniciar'),
                 ),
                 const SizedBox(width: 15),
                 OutlinedButton.icon(
                   onPressed:
-                      _estaRodando ||
-                          _tempoRestanteSegundos < (_minutosEscolhidos * 60)
-                      ? _resetarTimer
+                      controller.estaRodando ||
+                          controller.tempoRestanteSegundos <
+                              (controller.minutosEscolhidos * 60)
+                      ? controller.resetarTimer
                       : null,
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(

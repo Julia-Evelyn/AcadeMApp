@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/preferences/app_preferences_service.dart';
 
 class ThemeController extends ChangeNotifier {
-  ThemeMode themeMode = ThemeMode.system;
-  Color corDestaque = Colors.blue;
+  ThemeController({
+    required AppPreferencesService preferencesService,
+    required ThemeMode initialThemeMode,
+    required Color initialAccentColor,
+  }) : _preferencesService = preferencesService,
+       themeMode = initialThemeMode,
+       corDestaque = initialAccentColor;
 
-  // Lista com cores de destaque do app
+  final AppPreferencesService _preferencesService;
+
+  ThemeMode themeMode;
+  Color corDestaque;
+
   static const List<Color> coresDisponiveis = [
     Colors.red,
     Colors.orange,
@@ -17,41 +27,15 @@ class ThemeController extends ChangeNotifier {
     Colors.pink,
   ];
 
-  ThemeController() {
-    _carregarPreferencias();
-  }
-
-  Future<void> _carregarPreferencias() async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    final temaSalvo = prefs.getString('theme_mode');
-    if (temaSalvo == 'light') {
-      themeMode = ThemeMode.light;
-    } else if (temaSalvo == 'dark') {
-      themeMode = ThemeMode.dark;
-    }
-
-    final corSalva = prefs.getInt('cor_destaque');
-    if (corSalva != null) {
-      corDestaque = Color(corSalva);
-    }
-    
-    notifyListeners();
-  }
-
-// pula a função mudarTema 
-
-  void mudarCor(Color novaCor) async {
+  Future<void> mudarCor(Color novaCor) async {
     corDestaque = novaCor;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('cor_destaque', novaCor.toARGB32()); 
+    await _preferencesService.saveAccentColorValue(novaCor.toARGB32());
   }
 
-  void mudarTema(ThemeMode modo) async {
+  Future<void> mudarTema(ThemeMode modo) async {
     themeMode = modo;
     notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('theme_mode', modo.name);
+    await _preferencesService.saveThemeMode(modo);
   }
 }

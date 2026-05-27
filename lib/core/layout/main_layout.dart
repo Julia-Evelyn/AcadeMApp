@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
-import '../../features/home/view/home_view.dart';
-import '../../features/treinos/view/treinos_view.dart';
+
 import '../../features/corrida/view/corrida_view.dart';
+import '../../features/home/controller/home_controller.dart';
+import '../../features/home/view/home_view.dart';
+import '../../features/perfil/controller/perfil_controller.dart';
 import '../../features/perfil/view/perfil_view.dart';
+import '../../features/treinos/view/treinos_view.dart';
+import '../services/audio/alarm_audio_service.dart';
+import '../services/media/profile_image_picker_service.dart';
+import '../services/preferences/app_preferences_service.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  const MainLayout({
+    super.key,
+    required this.preferencesService,
+    required this.profileImagePickerService,
+  });
+
+  final AppPreferencesService preferencesService;
+  final ProfileImagePickerService profileImagePickerService;
 
   @override
   State<MainLayout> createState() => _MainLayoutState();
@@ -13,13 +26,10 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _indiceAtual = 0;
+  late final HomeController _homeController;
+  late final PerfilController _perfilController;
 
-  final List<Widget> _telas = [
-    const HomeView(),
-    const TreinosView(),
-    const CorridaView(),
-    const PerfilView(),
-  ];
+  late final List<Widget> _telas;
 
   final List<String> _titulos = [
     'Home',
@@ -27,6 +37,32 @@ class _MainLayoutState extends State<MainLayout> {
     'Corrida',
     'Meu Perfil',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _homeController = HomeController(
+      preferencesService: widget.preferencesService,
+      alarmAudioService: AudioplayersAlarmAudioService(),
+    );
+    _perfilController = PerfilController(
+      preferencesService: widget.preferencesService,
+      imagePickerService: widget.profileImagePickerService,
+    );
+    _telas = [
+      HomeView(controller: _homeController),
+      const TreinosView(),
+      const CorridaView(),
+      PerfilView(controller: _perfilController),
+    ];
+  }
+
+  @override
+  void dispose() {
+    _homeController.dispose();
+    _perfilController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,13 +76,14 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         ],
       ),
-      body: IndexedStack(
-        index: _indiceAtual,
-        children: _telas,
-      ),
+      body: IndexedStack(index: _indiceAtual, children: _telas),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _indiceAtual,
         onTap: (indice) {
+          if (indice == 0) {
+            _homeController.carregarNomeUsuario();
+          }
+
           setState(() {
             _indiceAtual = indice;
           });
@@ -54,8 +91,14 @@ class _MainLayoutState extends State<MainLayout> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Treinos'),
-          BottomNavigationBarItem(icon: Icon(Icons.directions_run), label: 'Corrida'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Treinos',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.directions_run),
+            label: 'Corrida',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
         ],
       ),
