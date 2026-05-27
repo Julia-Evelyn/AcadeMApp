@@ -1,3 +1,4 @@
+import 'package:academyapp/features/treinos/view/busca_treinos_view.dart';
 import 'package:flutter/material.dart';
 
 import '../../features/corrida/view/corrida_view.dart';
@@ -6,6 +7,8 @@ import '../../features/home/view/home_view.dart';
 import '../../features/perfil/controller/perfil_controller.dart';
 import '../../features/perfil/view/perfil_view.dart';
 import '../../features/treinos/view/treinos_view.dart';
+// ⬇️ IMPORT DA TELA DE BUSCA
+
 import '../services/audio/alarm_audio_service.dart';
 import '../services/media/profile_image_picker_service.dart';
 import '../services/preferences/app_preferences_service.dart';
@@ -31,9 +34,11 @@ class _MainLayoutState extends State<MainLayout> {
 
   late final List<Widget> _telas;
 
+  // ⬇️ ATUALIZAÇÃO: Título da busca no índice 2 (meio)
   final List<String> _titulos = [
     'Home',
     'Meus Treinos',
+    'Explorar Treinos', 
     'Corrida',
     'Meu Perfil',
   ];
@@ -49,9 +54,12 @@ class _MainLayoutState extends State<MainLayout> {
       preferencesService: widget.preferencesService,
       imagePickerService: widget.profileImagePickerService,
     );
+    
+    // ⬇️ ATUALIZAÇÃO: Tela de Busca no índice 2 (meio)
     _telas = [
       HomeView(controller: _homeController),
       const TreinosView(),
+      const BuscaTreinosView(), 
       const CorridaView(),
       PerfilView(controller: _perfilController),
     ];
@@ -94,6 +102,11 @@ class _MainLayoutState extends State<MainLayout> {
           BottomNavigationBarItem(
             icon: Icon(Icons.fitness_center),
             label: 'Treinos',
+          ),
+          // ⬇️ ATUALIZAÇÃO: Ícone da Busca no índice 2 (meio)
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: 'Buscar',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.directions_run),
