@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "610317934612",
+    "project_id": "academapp",
+    "storage_bucket": "academapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:610317934612:android:73c43774e3fa229ce94701",
+        "android_client_info": {
+          "package_name": "com.example.academyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_w1akN4O6IKo6j8oleK8QACu04_lC6Z0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

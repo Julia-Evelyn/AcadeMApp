@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/configuracoes/view/configuracoes_view.dart';
 import 'features/historico_treinos/view/historico_treinos_view.dart';
 import 'core/layout/main_layout.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   final themeController = ThemeController();
 
@@ -33,7 +38,7 @@ class MyApp extends StatelessWidget {
 
           initialRoute: '/home',
           routes: {
-            '/home': (context) => const MainLayout(), 
+            '/home': (context) => const MainLayout(),
             '/configuracoes': (context) =>
                 ConfiguracoesView(themeController: themeController),
             '/historico_treinos': (context) => const HistoricoView(),
