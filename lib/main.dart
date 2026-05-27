@@ -27,8 +27,8 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'AcadeMApp',
 
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
+          theme: AppTheme.getLightTheme(themeController.corDestaque),
+          darkTheme: AppTheme.getDarkTheme(themeController.corDestaque),
           themeMode: themeController.themeMode,
 
           initialRoute: '/home',

@@ -23,7 +23,7 @@ class ConfiguracoesView extends StatelessWidget {
 
             children: [
               const Text(
-                'Aparência',
+                'Tema',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
 
@@ -73,8 +73,82 @@ class ConfiguracoesView extends StatelessWidget {
                         if (valor != null) themeController.mudarTema(valor);
                       },
                     ),
-                    
                   ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Seção de cores
+              const Text(
+                'Cor de Destaque',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Card(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Personalize a cor principal do aplicativo:'),
+                      const SizedBox(height: 15),
+                      // Lista horizontal de cores
+                      SizedBox(
+                        height: 50,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: ThemeController.coresDisponiveis.length,
+                          separatorBuilder: (context, _) =>
+                              const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final cor = ThemeController.coresDisponiveis[index];
+
+                            final selecionada =
+                                cor.toARGB32() ==
+                                themeController.corDestaque.toARGB32();
+
+                            return GestureDetector(
+                              onTap: () => themeController.mudarCor(cor),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: cor,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: selecionada
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface
+                                        : Colors.transparent,
+                                    width: selecionada ? 3 : 0,
+                                  ),
+                                  boxShadow: [
+                                    if (selecionada)
+                                      BoxShadow(
+                                        color: cor.withValues(alpha: 0.5),
+                                        blurRadius: 8,
+                                        spreadRadius: 2,
+                                      ),
+                                  ],
+                                ),
+                                child: selecionada
+                                    ? const Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                      )
+                                    : null,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

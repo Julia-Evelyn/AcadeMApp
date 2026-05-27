@@ -72,8 +72,8 @@ class _HomeViewState extends State<HomeView> {
             _timer?.cancel();
             _estaRodando = false;
             _tempoRestanteSegundos = _minutosEscolhidos * 60; // Reseta o texto
-            _tocarAlarme(); 
-            _mostrarAlertaDeMovimento(); 
+            _tocarAlarme();
+            _mostrarAlertaDeMovimento();
           }
         });
       });
@@ -103,7 +103,7 @@ class _HomeViewState extends State<HomeView> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true, 
+      isScrollControlled: true,
       builder: (BuildContext context) {
         return Container(
           height: 350,
@@ -115,7 +115,7 @@ class _HomeViewState extends State<HomeView> {
                 color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 10,
                 spreadRadius: 2,
-              )
+              ),
             ],
           ),
           child: Column(
@@ -131,17 +131,24 @@ class _HomeViewState extends State<HomeView> {
               ),
               // Cabeçalho
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 5,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Definir Tempo',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                       ),
                       onPressed: () => Navigator.pop(context),
@@ -157,7 +164,10 @@ class _HomeViewState extends State<HomeView> {
                   // Faz o texto do scroll seguir as cores do tema
                   data: CupertinoThemeData(
                     textTheme: CupertinoTextThemeData(
-                      pickerTextStyle: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 22),
+                      pickerTextStyle: TextStyle(
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: 22,
+                      ),
                     ),
                   ),
                   child: CupertinoTimerPicker(
@@ -165,7 +175,7 @@ class _HomeViewState extends State<HomeView> {
                     initialTimerDuration: Duration(minutes: _minutosEscolhidos),
                     onTimerDurationChanged: (Duration novaDuracao) {
                       int minutosTotais = novaDuracao.inMinutes;
-                      if (minutosTotais == 0) minutosTotais = 1; 
+                      if (minutosTotais == 0) minutosTotais = 1;
                       _mudarTempo(minutosTotais);
                     },
                   ),
@@ -186,7 +196,9 @@ class _HomeViewState extends State<HomeView> {
       barrierDismissible: false, // Block o clique fora do popup
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Row(
             children: [
               Icon(Icons.directions_run, color: Colors.orange, size: 30),
@@ -203,7 +215,7 @@ class _HomeViewState extends State<HomeView> {
               onPressed: () {
                 _pararAlarme(); // Desliga o som do alarme
                 Navigator.pop(context);
-                _iniciarOuPausarTimer(); // Reinicia a contagem 
+                _iniciarOuPausarTimer(); // Reinicia a contagem
               },
               child: const Text('Entendido!'),
             ),
@@ -226,15 +238,18 @@ class _HomeViewState extends State<HomeView> {
         final double horizontalPadding = constraints.maxWidth > 600 ? 100 : 20;
 
         return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 30),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 30,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Bem-Vindo, $_nomeUsuario!',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
               const Text('Pronto para combater o sedentarismo hoje?'),
@@ -268,10 +283,17 @@ class _HomeViewState extends State<HomeView> {
             SizedBox(height: 5),
             Text(
               '0.0 km',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
             SizedBox(height: 5),
-            Text('O rastreamento via GPS será programado depois...', style: TextStyle(fontSize: 12)),
+            Text(
+              'O rastreamento via GPS será programado depois...',
+              style: TextStyle(fontSize: 12),
+            ),
           ],
         ),
       ),
@@ -282,8 +304,8 @@ class _HomeViewState extends State<HomeView> {
   Widget _buildCardInatividade(BuildContext context) {
     int horasEscolhidas = _minutosEscolhidos ~/ 60;
     int minEscolhidos = _minutosEscolhidos % 60;
-    String textoDoBotao = horasEscolhidas > 0 
-        ? '${horasEscolhidas}h ${minEscolhidos}min' 
+    String textoDoBotao = horasEscolhidas > 0
+        ? '${horasEscolhidas}h ${minEscolhidos}min'
         : '$minEscolhidos min';
 
     return Card(
@@ -291,7 +313,9 @@ class _HomeViewState extends State<HomeView> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
         side: BorderSide(
-          color: _estaRodando ? Colors.blue.withValues(alpha: 0.5) : Colors.transparent,
+          color: _estaRodando
+              ? Colors.blue.withValues(alpha: 0.5)
+              : Colors.transparent,
           width: 2,
         ),
       ),
@@ -313,16 +337,22 @@ class _HomeViewState extends State<HomeView> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
-                
+
+                // parte de cima do card
                 InkWell(
                   onTap: _estaRodando ? null : _mostrarSeletorDeTempo,
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: _estaRodando 
-                          ? Colors.grey.withValues(alpha: 0.1) 
-                          : Theme.of(context).primaryColor.withValues(alpha: 0.1),
+                      color: _estaRodando
+                          ? Theme.of(
+                              context,
+                            ).disabledColor.withValues(alpha: 0.1)
+                          : Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
@@ -331,14 +361,22 @@ class _HomeViewState extends State<HomeView> {
                           textoDoBotao,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
-                            color: _estaRodando ? Colors.grey : Theme.of(context).primaryColor,
+                            color: _estaRodando
+                                ? Theme.of(context).disabledColor
+                                : Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer, 
                           ),
                         ),
                         const SizedBox(width: 6),
                         Icon(
-                          Icons.edit, 
-                          size: 16, 
-                          color: _estaRodando ? Colors.grey : Theme.of(context).primaryColor,
+                          Icons.edit,
+                          size: 16,
+                          color: _estaRodando
+                              ? Theme.of(context).disabledColor
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.onPrimaryContainer,
                         ),
                       ],
                     ),
@@ -366,18 +404,26 @@ class _HomeViewState extends State<HomeView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _estaRodando ? Colors.amber : Colors.blue,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                   ),
                   icon: Icon(_estaRodando ? Icons.pause : Icons.play_arrow),
                   label: Text(_estaRodando ? 'Pausar' : 'Iniciar'),
                 ),
                 const SizedBox(width: 15),
                 OutlinedButton.icon(
-                  onPressed: _estaRodando || _tempoRestanteSegundos < (_minutosEscolhidos * 60) 
-                      ? _resetarTimer 
+                  onPressed:
+                      _estaRodando ||
+                          _tempoRestanteSegundos < (_minutosEscolhidos * 60)
+                      ? _resetarTimer
                       : null,
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                   ),
                   icon: const Icon(Icons.stop),
                   label: const Text('Zerar'),

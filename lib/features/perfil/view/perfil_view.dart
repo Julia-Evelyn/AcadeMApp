@@ -113,7 +113,7 @@ class _PerfilViewState extends State<PerfilView> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil atualizado com sucesso!')),
       );
-      
+
       setState(() {
         _estaEditando = false;
       });
@@ -127,7 +127,10 @@ class _PerfilViewState extends State<PerfilView> {
         double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
 
         return SingleChildScrollView(
-          padding: EdgeInsets.symmetric(horizontal: margemLateral, vertical: 30),
+          padding: EdgeInsets.symmetric(
+            horizontal: margemLateral,
+            vertical: 30,
+          ),
           child: Column(
             children: [
               // Foto de perfil
@@ -136,22 +139,30 @@ class _PerfilViewState extends State<PerfilView> {
                 children: [
                   CircleAvatar(
                     radius: 60,
-                    backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-                    backgroundImage: _imagemDoPerfil != null ? FileImage(_imagemDoPerfil!) : null,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).primaryColor.withValues(alpha: 0.1),
+                    backgroundImage: _imagemDoPerfil != null
+                        ? FileImage(_imagemDoPerfil!)
+                        : null,
                     child: _imagemDoPerfil == null
-                        ? Icon(Icons.person, size: 60, color: Theme.of(context).primaryColor)
+                        ? Icon(
+                            Icons.person,
+                            size: 60,
+                            color: Theme.of(context).primaryColor,
+                          )
                         : null,
                   ),
                   CircleAvatar(
                     radius: 20,
-                    backgroundColor: _estaEditando 
-                        ? Theme.of(context).primaryColor 
+                    backgroundColor: _estaEditando
+                        ? Theme.of(context).primaryColor
                         : Theme.of(context).colorScheme.secondary,
                     child: IconButton(
                       icon: Icon(
-                        _estaEditando ? Icons.camera_alt : Icons.edit, 
-                        color: Colors.white, 
-                        size: 20
+                        _estaEditando ? Icons.camera_alt : Icons.edit,
+                        color: Colors.white,
+                        size: 20,
                       ),
                       onPressed: () {
                         if (!_estaEditando) {
@@ -222,15 +233,20 @@ class _PerfilViewState extends State<PerfilView> {
                   height: 50,
                   child: ElevatedButton(
                     onPressed: _salvarPerfil,
-                    child: const Text('Salvar Alterações', style: TextStyle(fontSize: 16)),
+                    child: const Text(
+                      'Salvar Alterações',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ] else ...[
+                
                 // Modo Leitura
                 _buildCardLeitura(
                   titulo: 'Nome Completo',
                   // Junta o nome e o sobrenome, se tiver vazio mostra que não foi informado
-                  valor: '${_nomeController.text} ${_sobrenomeController.text}'.trim(),
+                  valor: '${_nomeController.text} ${_sobrenomeController.text}'
+                      .trim(),
                   icone: Icons.badge,
                 ),
                 const SizedBox(height: 15),
@@ -239,7 +255,9 @@ class _PerfilViewState extends State<PerfilView> {
                     Expanded(
                       child: _buildCardLeitura(
                         titulo: 'Peso Atual',
-                        valor: _pesoController.text.isNotEmpty ? '${_pesoController.text} kg' : '',
+                        valor: _pesoController.text.isNotEmpty
+                            ? '${_pesoController.text} kg'
+                            : '',
                         icone: Icons.monitor_weight,
                       ),
                     ),
@@ -247,7 +265,9 @@ class _PerfilViewState extends State<PerfilView> {
                     Expanded(
                       child: _buildCardLeitura(
                         titulo: 'Altura',
-                        valor: _alturaController.text.isNotEmpty ? '${_alturaController.text} cm' : '',
+                        valor: _alturaController.text.isNotEmpty
+                            ? '${_alturaController.text} cm'
+                            : '',
                         icone: Icons.height,
                       ),
                     ),
@@ -262,9 +282,15 @@ class _PerfilViewState extends State<PerfilView> {
   }
 
   // Widget pro modo leitura
-  Widget _buildCardLeitura({required String titulo, required String valor, required IconData icone}) {
-    // caso o usuário não preencheu nenhum dado
+  Widget _buildCardLeitura({
+    required String titulo,
+    required String valor,
+    required IconData icone,
+  }) {
     final valorFinal = valor.isEmpty ? 'Não informado' : valor;
+
+    // Descobre se o modo escuro está ativado para ajustar a transparência da borda
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -272,7 +298,9 @@ class _PerfilViewState extends State<PerfilView> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(15),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+          color: Theme.of(
+            context,
+          ).primaryColor.withValues(alpha: isDark ? 0.3 : 0.1),
           width: 2,
         ),
         boxShadow: [
@@ -286,8 +314,11 @@ class _PerfilViewState extends State<PerfilView> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: Theme.of(context).primaryColor.withValues(alpha: 0.1),
-            child: Icon(icone, color: Theme.of(context).primaryColor),
+            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+            child: Icon(
+              icone,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
           ),
           const SizedBox(width: 15),
           Expanded(
