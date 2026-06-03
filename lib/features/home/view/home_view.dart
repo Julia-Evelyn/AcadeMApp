@@ -294,7 +294,7 @@ class _HomeViewState extends State<HomeView> {
                   CameraMotionDetector(controller: widget.controller),
                   const SizedBox(height: 35),
 
-                  // 3. O CARD HERÓI: ALERTA DE INATIVIDADE (Estilo Layout Premium Azul)
+                  // ALERTA DE INATIVIDADE 
                   Text(
                     'Controle de Atividade',
                     style: TextStyle(
@@ -407,7 +407,7 @@ class _HomeViewState extends State<HomeView> {
                           ],
                         ),
 
-                        // CRONÔMETRO CENTRAL GIGANTE
+                        // CRONÔMETRO CENTRAL
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
                           child: Center(

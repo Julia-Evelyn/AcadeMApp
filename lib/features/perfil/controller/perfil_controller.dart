@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // 1. Adicione o import do Firebase
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/media/profile_image_picker_service.dart';
 import '../../../core/services/preferences/app_preferences_service.dart';
@@ -15,7 +15,7 @@ class PerfilController extends ChangeNotifier {
   }) : _preferencesService = preferencesService,
        _imagePickerService = imagePickerService {
     carregarDadosSalvos();
-    _escutarAutenticacao(); // 2. Inicializa o radar do Firebase
+    _escutarAutenticacao();
   }
 
   final AppPreferencesService _preferencesService;
@@ -29,7 +29,7 @@ class PerfilController extends ChangeNotifier {
   bool estaEditando = false;
   File? imagemDoPerfil;
   
-  User? usuarioAtual; // 3. Estado que controla se o usuário está logado na nuvem
+  User? usuarioAtual; 
   StreamSubscription<User?>? _authSubscription;
 
   Future<void> carregarDadosSalvos() async {
@@ -46,7 +46,6 @@ class PerfilController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 4. Escuta mudanças na conta (Login/Logout) em tempo real
   void _escutarAutenticacao() {
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
       usuarioAtual = user;
@@ -54,7 +53,6 @@ class PerfilController extends ChangeNotifier {
     });
   }
 
-  // 5. Método para deslogar da conta
   Future<void> deslogar() async {
     await FirebaseAuth.instance.signOut();
   }
@@ -73,7 +71,6 @@ class PerfilController extends ChangeNotifier {
     imagemDoPerfil = imagem;
     notifyListeners();
     
-    // Auto-salva o caminho da nova foto nas preferências locais
     await salvarPerfil();
   }
 
@@ -111,7 +108,7 @@ class PerfilController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _authSubscription?.cancel(); // Limpa o listener para evitar vazamento de memória
+    _authSubscription?.cancel();
     nomeController.dispose();
     sobrenomeController.dispose();
     pesoController.dispose();

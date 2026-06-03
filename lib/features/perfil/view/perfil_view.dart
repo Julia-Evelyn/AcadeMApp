@@ -8,6 +8,62 @@ class PerfilView extends StatelessWidget {
 
   final PerfilController controller;
 
+  // Função para exibir o menu de escolha entre Câmera e Galeria
+  void _mostrarOpcoesDeImagem(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 5,
+                margin: const EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)),
+              ),
+              Text('Foto de Perfil', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.camera_alt, color: Colors.blue),
+                ),
+                title: const Text('Tirar nova foto', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.pegarImagem(ImageSource.camera);
+                },
+              ),
+              const SizedBox(height: 10),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle),
+                  child: const Icon(Icons.photo_library, color: Colors.purple),
+                ),
+                title: const Text('Escolher da galeria', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.pegarImagem(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
@@ -21,11 +77,29 @@ class PerfilView extends StatelessWidget {
 
         return Scaffold(
           backgroundColor: isDark ? tema.colorScheme.surface : const Color(0xFFF4F6F9),
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            actions: [
+              // Botão na AppBar para alternar entre Salvar e Editar
+              IconButton(
+                icon: Icon(controller.estaEditando ? Icons.check : Icons.edit, color: corDestaque),
+                onPressed: () {
+                  if (controller.estaEditando) {
+                    controller.salvarPerfil();
+                  } else {
+                    controller.iniciarEdicao();
+                  }
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // FOTO DE PERFIL VINDA DIRETO DO CONTROLLER
+                // FOTO DE PERFIL
                 Center(
                   child: Stack(
                     children: [
@@ -36,10 +110,7 @@ class PerfilView extends StatelessWidget {
                           color: corDestaque.withValues(alpha: 0.1),
                           border: Border.all(color: corDestaque, width: 4),
                           image: controller.imagemDoPerfil != null
-                              ? DecorationImage(
-                                  image: FileImage(controller.imagemDoPerfil!), 
-                                  fit: BoxFit.cover,
-                                )
+                              ? DecorationImage(image: FileImage(controller.imagemDoPerfil!), fit: BoxFit.cover)
                               : null,
                         ),
                         child: controller.imagemDoPerfil == null 
@@ -49,15 +120,13 @@ class PerfilView extends StatelessWidget {
                       Positioned(
                         bottom: 0, right: 0,
                         child: GestureDetector(
-                          onTap: () => controller.pegarImagem(ImageSource.camera),
+                          // Abre o menu de opções
+                          onTap: () => _mostrarOpcoesDeImagem(context),
                           child: Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: corDestaque, shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? tema.colorScheme.surface : const Color(0xFFF4F6F9), 
-                                width: 4,
-                              ),
+                              border: Border.all(color: isDark ? tema.colorScheme.surface : const Color(0xFFF4F6F9), width: 4),
                             ),
                             child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
                           ),
@@ -66,74 +135,85 @@ class PerfilView extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                
-                // INFORMAÇÕES DO ATLETA
-                Text(
-                  controller.nomeCompleto,
-                  style: TextStyle(
-                    fontSize: 28, 
-                    fontWeight: FontWeight.w900, 
-                    color: isDark ? Colors.white : Colors.black87, 
-                    letterSpacing: -0.5,
+                const SizedBox(height: 24),
+
+                if (controller.estaEditando) ...[
+                  // FORMULÁRIO DE EDIÇÃO
+                  _construirCampoTexto(context, 'Nome', controller.nomeController),
+                  _construirCampoTexto(context, 'Sobrenome', controller.sobrenomeController),
+                  Row(
+                    children: [
+                      Expanded(child: _construirCampoTexto(context, 'Peso (kg)', controller.pesoController, isNumeric: true)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _construirCampoTexto(context, 'Altura (cm)', controller.alturaController, isNumeric: true)),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isLoggedIn 
-                      ? controller.usuarioAtual!.email! 
-                      : 'Seus dados estão salvos apenas neste aparelho.',
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-                const SizedBox(height: 40),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: controller.salvarPerfil,
+                    icon: const Icon(Icons.save),
+                    label: const Text('Salvar Alterações'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: corDestaque, foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 55),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+                ] else ...[
+                  // VISUALIZAÇÃO NORMAL DO PERFIL
+                  Text(
+                    controller.nomeCompleto,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black87, letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    isLoggedIn ? controller.usuarioAtual!.email! : 'Seus dados estão salvos apenas neste aparelho.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                  
+                  // Mostra Peso e Altura se o usuário tiver preenchido
+                  if (controller.pesoFormatado.isNotEmpty || controller.alturaFormatada.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (controller.pesoFormatado.isNotEmpty)
+                          _construirChipInfo(context, Icons.scale, controller.pesoFormatado),
+                        if (controller.pesoFormatado.isNotEmpty && controller.alturaFormatada.isNotEmpty)
+                          const SizedBox(width: 12),
+                        if (controller.alturaFormatada.isNotEmpty)
+                          _construirChipInfo(context, Icons.height, controller.alturaFormatada),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 40),
+                ],
 
                 // CARD DE DESTAQUE SINCRO (MODO VISITANTE)
-                if (!isLoggedIn)
+                if (!isLoggedIn && !controller.estaEditando)
                   Container(
                     width: double.infinity, padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [corDestaque, corDestaque.withValues(alpha: 0.7)], 
-                        begin: Alignment.topLeft, 
-                        end: Alignment.bottomRight,
-                      ),
+                      gradient: LinearGradient(colors: [corDestaque, corDestaque.withValues(alpha: 0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                       borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: corDestaque.withValues(alpha: 0.4), 
-                          blurRadius: 20, 
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
+                      boxShadow: [BoxShadow(color: corDestaque.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: Column(
                       children: [
                         const Icon(Icons.cloud_sync, color: Colors.white, size: 48),
                         const SizedBox(height: 16),
-                        const Text(
-                          'Sincronize na Nuvem', 
-                          style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
-                        ),
+                        const Text('Sincronize na Nuvem', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 10),
-                        const Text(
-                          'Crie uma conta para salvar suas corridas, treinos e não perder o progresso.', 
-                          textAlign: TextAlign.center, 
-                          style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
-                        ),
+                        const Text('Crie uma conta para salvar suas corridas, treinos e não perder o progresso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context, 
-                              MaterialPageRoute(builder: (context) => const LoginView()),
-                            );
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginView()));
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white, 
-                            foregroundColor: corDestaque, 
-                            elevation: 0,
-                            minimumSize: const Size(double.infinity, 55), 
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            backgroundColor: Colors.white, foregroundColor: corDestaque, elevation: 0,
+                            minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           ),
                           child: const Text('Entrar / Cadastrar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         ),
@@ -141,8 +221,8 @@ class PerfilView extends StatelessWidget {
                     ),
                   ),
 
-                // PAINEL DE MÉTRICAS (MODO LOGADO)
-                if (isLoggedIn) ...[
+                // PAINEL DE MÉTRICAS (MODO LOGADO E NÃO ESTÁ EDITANDO)
+                if (isLoggedIn && !controller.estaEditando) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -153,27 +233,62 @@ class PerfilView extends StatelessWidget {
                       _construirColunaEstatistica('Dias', '0', isDark),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
                 ],
                 
-                const SizedBox(height: 10),
-
-                _construirOpcaoMenu(context, Icons.history, 'Histórico de Corridas', isDark, onTap: () {}),
-                _construirOpcaoMenu(context, Icons.settings, 'Configurações', isDark, onTap: () {}),
-                if (isLoggedIn)
-                  _construirOpcaoMenu(
-                    context, 
-                    Icons.logout, 
-                    'Sair da Conta', 
-                    isDark, 
-                    isDestructive: true, 
-                    onTap: controller.deslogar,
-                  ),
+                // MENUS INFERIORES
+                if (!controller.estaEditando) ...[
+                  _construirOpcaoMenu(context, Icons.history, 'Histórico de Corridas', isDark, onTap: () {}),
+                  _construirOpcaoMenu(context, Icons.settings, 'Configurações', isDark, onTap: () {}),
+                  if (isLoggedIn)
+                    _construirOpcaoMenu(context, Icons.logout, 'Sair da Conta', isDark, isDestructive: true, onTap: controller.deslogar),
+                ]
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  // Componente visual para os campos de texto do formulário
+  Widget _construirCampoTexto(BuildContext context, String label, TextEditingController textController, {bool isNumeric = false}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextField(
+        controller: textController,
+        keyboardType: isNumeric ? TextInputType.number : TextInputType.name,
+        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.grey),
+          filled: true,
+          fillColor: isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+      ),
+    );
+  }
+
+  // Componente visual para exibir as pílulas de peso e altura
+  Widget _construirChipInfo(BuildContext context, IconData icone, String valor) {
+    final corDestaque = Theme.of(context).colorScheme.primary;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: corDestaque.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icone, size: 16, color: corDestaque),
+          const SizedBox(width: 6),
+          Text(valor, style: TextStyle(fontWeight: FontWeight.bold, color: corDestaque)),
+        ],
+      ),
     );
   }
 
@@ -186,14 +301,7 @@ class PerfilView extends StatelessWidget {
     );
   }
 
-  Widget _construirOpcaoMenu(
-    BuildContext context, 
-    IconData icone, 
-    String titulo, 
-    bool isDark, {
-    bool isDestructive = false, 
-    required VoidCallback onTap,
-  }) {
+  Widget _construirOpcaoMenu(BuildContext context, IconData icone, String titulo, bool isDark, {bool isDestructive = false, required VoidCallback onTap}) {
     final corItem = isDestructive ? Colors.redAccent : (isDark ? Colors.white : Colors.black87);
     
     return Container(
@@ -201,9 +309,7 @@ class PerfilView extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 5)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 5))],
       ),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
