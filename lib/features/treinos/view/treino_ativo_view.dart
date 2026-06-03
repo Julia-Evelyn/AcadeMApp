@@ -12,7 +12,7 @@ class TreinoAtivoView extends StatefulWidget {
 }
 
 class _TreinoAtivoViewState extends State<TreinoAtivoView> {
-  final int _tempoExercicio = 45; 
+  final int _tempoExercicio = 30; 
   final int _tempoDescanso = 15; 
   final int _totalSeries = 3;
 

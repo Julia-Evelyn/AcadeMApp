@@ -11,7 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/configuracoes/view/configuracoes_view.dart';
 import 'features/historico_treinos/view/historico_treinos_view.dart';
-import 'features/treinos/controller/treino_provider.dart';
+import 'features/treinos/controller/treino_provider.dart';  
 import 'firebase_options.dart';
 
 Future<void> main() async {
