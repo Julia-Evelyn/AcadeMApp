@@ -1,273 +1,316 @@
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../auth/view/login_view.dart';
 
-import '../controller/perfil_controller.dart';
+class PerfilView extends StatefulWidget {
+  const PerfilView({super.key});
 
-class PerfilView extends StatelessWidget {
-  const PerfilView({super.key, required this.controller});
+  @override
+  State<PerfilView> createState() => _PerfilViewState();
+}
 
-  final PerfilController controller;
+class _PerfilViewState extends State<PerfilView> {
+  User? _usuarioAtual;
 
-  Future<void> _mostrarOpcoesDeImagem(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Tirar Nova Foto'),
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.pegarImagem(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Escolher da Galeria'),
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.pegarImagem(ImageSource.gallery);
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  @override
+  void initState() {
+    super.initState();
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      if (mounted) {
+        setState(() {
+          _usuarioAtual = user;
+        });
+      }
+    });
   }
 
-  Future<void> _salvarPerfil(BuildContext context) async {
-    await controller.salvarPerfil();
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Perfil atualizado com sucesso!')),
-      );
-    }
+  Future<void> _deslogar() async {
+    await FirebaseAuth.instance.signOut();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: controller,
-      builder: (context, child) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final margemLateral = constraints.maxWidth > 600 ? 100.0 : 20.0;
+    final tema = Theme.of(context);
+    final isDark = tema.brightness == Brightness.dark;
+    final corDestaque = tema.colorScheme.primary;
 
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: margemLateral,
-                vertical: 30,
-              ),
-              child: Column(
+    final bool isLoggedIn = _usuarioAtual != null;
+
+    return Scaffold(
+      backgroundColor: isDark
+          ? tema.colorScheme.surface
+          : const Color(0xFFF4F6F9),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: Text(
+          'Meu Perfil',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          children: [
+            Center(
+              child: Stack(
                 children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).primaryColor.withValues(alpha: 0.1),
-                        backgroundImage: controller.imagemDoPerfil != null
-                            ? FileImage(controller.imagemDoPerfil!)
-                            : null,
-                        child: controller.imagemDoPerfil == null
-                            ? Icon(
-                                Icons.person,
-                                size: 60,
-                                color: Theme.of(context).primaryColor,
-                              )
-                            : null,
-                      ),
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundColor: controller.estaEditando
-                            ? Theme.of(context).primaryColor
-                            : Theme.of(context).colorScheme.secondary,
-                        child: IconButton(
-                          icon: Icon(
-                            controller.estaEditando
-                                ? Icons.camera_alt
-                                : Icons.edit,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            if (!controller.estaEditando) {
-                              controller.iniciarEdicao();
-                            } else {
-                              _mostrarOpcoesDeImagem(context);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
+                  Container(
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: corDestaque.withValues(alpha: 0.1),
+                      border: Border.all(color: corDestaque, width: 4),
+                    ),
+                    child: Icon(Icons.person, size: 70, color: corDestaque),
                   ),
-                  const SizedBox(height: 30),
-                  if (controller.estaEditando) ...[
-                    TextFormField(
-                      controller: controller.nomeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.badge),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    TextFormField(
-                      controller: controller.sobrenomeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Sobrenome',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.badge_outlined),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: controller.pesoController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Peso (kg)',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.monitor_weight),
-                            ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Abrindo câmera... 📸')),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: corDestaque,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark
+                                ? tema.colorScheme.surface
+                                : const Color(0xFFF4F6F9),
+                            width: 4,
                           ),
                         ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: TextFormField(
-                            controller: controller.alturaController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                              labelText: 'Altura (cm)',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.height),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 40),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: () => _salvarPerfil(context),
-                        child: const Text(
-                          'Salvar Alteracoes',
-                          style: TextStyle(fontSize: 16),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 22,
                         ),
                       ),
                     ),
-                  ] else ...[
-                    _buildCardLeitura(
-                      context: context,
-                      titulo: 'Nome Completo',
-                      valor: controller.nomeCompleto,
-                      icone: Icons.badge,
-                    ),
-                    const SizedBox(height: 15),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildCardLeitura(
-                            context: context,
-                            titulo: 'Peso Atual',
-                            valor: controller.pesoFormatado,
-                            icone: Icons.monitor_weight,
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: _buildCardLeitura(
-                            context: context,
-                            titulo: 'Altura',
-                            valor: controller.alturaFormatada,
-                            icone: Icons.height,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              isLoggedIn ? 'Atleta PRO' : 'Visitante',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                color: isDark ? Colors.white : Colors.black87,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              isLoggedIn
+                  ? _usuarioAtual!.email!
+                  : 'Seus dados estão salvos apenas neste aparelho.',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 40),
+
+            if (!isLoggedIn)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [corDestaque, corDestaque.withValues(alpha: 0.7)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: corDestaque.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.cloud_sync, color: Colors.white, size: 48),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Sincronize na Nuvem',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Crie uma conta para salvar suas corridas, treinos e não perder o progresso.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginView(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: corDestaque,
+                        elevation: 0,
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Entrar / Cadastrar',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+            if (isLoggedIn)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _construirColunaEstatistica('Corridas', '0', isDark),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.grey.withValues(alpha: 0.3),
+                  ),
+                  _construirColunaEstatistica('Distância', '0 km', isDark),
+                  Container(
+                    height: 40,
+                    width: 1,
+                    color: Colors.grey.withValues(alpha: 0.3),
+                  ),
+                  _construirColunaEstatistica('Dias', '0', isDark),
+                ],
+              ),
+
+            const SizedBox(height: 30),
+
+            _construirOpcaoMenu(
+              context,
+              Icons.history,
+              'Histórico de Corridas',
+              isDark,
+              onTap: () {},
+            ),
+            _construirOpcaoMenu(
+              context,
+              Icons.settings,
+              'Configurações',
+              isDark,
+              onTap: () {},
+            ),
+            if (isLoggedIn)
+              _construirOpcaoMenu(
+                context,
+                Icons.logout,
+                'Sair da Conta',
+                isDark,
+                isDestructive: true,
+                onTap: _deslogar,
+              ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildCardLeitura({
-    required BuildContext context,
-    required String titulo,
-    required String valor,
-    required IconData icone,
+  Widget _construirColunaEstatistica(String titulo, String valor, bool isDark) {
+    return Column(
+      children: [
+        Text(
+          valor,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: isDark ? Colors.white : Colors.black87,
+          ),
+        ),
+        Text(titulo, style: const TextStyle(fontSize: 14, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _construirOpcaoMenu(
+    BuildContext context,
+    IconData icone,
+    String titulo,
+    bool isDark, {
+    bool isDestructive = false,
+    required VoidCallback onTap,
   }) {
-    final valorFinal = valor.isEmpty ? 'Nao informado' : valor;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final corItem = isDestructive
+        ? Colors.redAccent
+        : (isDark ? Colors.white : Colors.black87);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(
-          color: Theme.of(
-            context,
-          ).primaryColor.withValues(alpha: isDark ? 0.3 : 0.1),
-          width: 2,
-        ),
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.white,
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            child: Icon(
-              icone,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
-            ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: corItem.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  titulo,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).hintColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  valorFinal,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
+          child: Icon(icone, color: corItem, size: 24),
+        ),
+        title: Text(
+          titulo,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: corItem,
+            fontSize: 16,
           ),
-        ],
+        ),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey[400],
+        ),
+        onTap: onTap,
       ),
     );
   }

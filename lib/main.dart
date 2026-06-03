@@ -14,6 +14,8 @@ import 'features/historico_treinos/view/historico_treinos_view.dart';
 import 'features/treinos/controller/treino_provider.dart';  
 import 'firebase_options.dart';
 
+import 'package:firebase_core/firebase_core.dart';
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

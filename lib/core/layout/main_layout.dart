@@ -34,7 +34,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   late final List<Widget> _telas;
 
-  // ⬇️ ATUALIZAÇÃO: Título da busca no índice 2 (meio)
   final List<String> _titulos = [
     'Home',
     'Meus Treinos',
@@ -61,7 +60,7 @@ class _MainLayoutState extends State<MainLayout> {
       const TreinosView(),
       const BuscaTreinosView(), 
       const CorridaView(),
-      PerfilView(controller: _perfilController),
+      const PerfilView(),
     ];
   }
 
