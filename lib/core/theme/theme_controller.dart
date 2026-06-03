@@ -1,40 +1,41 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../services/preferences/app_preferences_service.dart';
 
 class ThemeController extends ChangeNotifier {
-  ThemeMode themeMode = ThemeMode.system;
+  ThemeController({
+    required AppPreferencesService preferencesService,
+    required ThemeMode initialThemeMode,
+    required Color initialAccentColor,
+  }) : _preferencesService = preferencesService,
+       themeMode = initialThemeMode,
+       corDestaque = initialAccentColor;
 
-  ThemeController() {
-    carregarTema();
+  final AppPreferencesService _preferencesService;
+
+  ThemeMode themeMode;
+  Color corDestaque;
+
+  static const List<Color> coresDisponiveis = [
+    Colors.red,
+    Colors.orange,
+    Colors.yellow,
+    Colors.green,
+    Colors.cyan,
+    Colors.blue,
+    Colors.purple,
+    Colors.pink,
+  ];
+
+  Future<void> mudarCor(Color novaCor) async {
+    corDestaque = novaCor;
+    notifyListeners();
+    await _preferencesService.saveAccentColorValue(novaCor.toARGB32());
   }
 
-  Future<void> carregarTema() async {
-    final prefs = await SharedPreferences.getInstance();
-    final temaSalvo = prefs.getString('tema_escolhido');
-
-    if (temaSalvo == 'claro') {
-      themeMode = ThemeMode.light;
-    } else if (temaSalvo == 'escuro') {
-      themeMode = ThemeMode.dark;
-    } else {
-      themeMode = ThemeMode.system;
-    }
-
+  Future<void> mudarTema(ThemeMode modo) async {
+    themeMode = modo;
     notifyListeners();
-  }
-
-  Future<void> mudarTema(ThemeMode novoTema) async {
-    themeMode = novoTema;
-    notifyListeners();
-
-    final prefs = await SharedPreferences.getInstance();
-
-    if (novoTema == ThemeMode.light) {
-      await prefs.setString('tema_escolhido', 'claro');
-    } else if (novoTema == ThemeMode.dark) {
-      await prefs.setString('tema_escolhido', 'escuro');
-    } else {
-      await prefs.setString('tema_escolhido', 'sistema');
-    }
+    await _preferencesService.saveThemeMode(modo);
   }
 }

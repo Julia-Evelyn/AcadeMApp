@@ -1,49 +1,50 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color primaryColor = Color(0xFF1E40AF);
-  static const Color accentColor = Color(0xFF10B981);
+  static ThemeData getLightTheme(Color corDestaque) {
+    // Cria a paleta garantindo que a cor primária seja a cor escolhida
+    final scheme = ColorScheme.fromSeed(
+      seedColor: corDestaque,
+      primary: corDestaque, 
+      brightness: Brightness.light,
+    );
 
-  static const Color lightBackground = Color(0xFFF3F4F6);
-  static const Color darkBackground = Color(0xFF111827);
-
-  //  Configuração do Tema Claro
-  static final ThemeData lightTheme = ThemeData(
-    brightness: Brightness.light,
-    primaryColor: primaryColor,
-    scaffoldBackgroundColor: lightBackground,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: primaryColor,
-      foregroundColor: Colors.white,
-      centerTitle: true,
-      elevation: 0,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primaryColor,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      appBarTheme: AppBarTheme(
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
       ),
-    ),
-  );
-
-  //  Configuração do Tema Escuro
-  static final ThemeData darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    primaryColor: primaryColor,
-    scaffoldBackgroundColor: darkBackground,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF1F2937),
-      foregroundColor: Colors.white,
-      centerTitle: true,
-      elevation: 0,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: accentColor,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      cardTheme: CardThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 2,
       ),
-    ),
-  );
+    );
+  }
+
+  static ThemeData getDarkTheme(Color corDestaque) {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: corDestaque,
+      primary: corDestaque, 
+      brightness: Brightness.dark,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      appBarTheme: AppBarTheme(
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: scheme.primary,
+        foregroundColor: scheme.onPrimary,
+      ),
+      cardTheme: CardThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 2,
+      ),
+    );
+  }
 }
