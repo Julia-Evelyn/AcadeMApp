@@ -257,29 +257,72 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: 30),
 
-                  // 2. PAINEL DE METRICAS DO SEU APP
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _construirCartaoEstatistica(
-                        'Distância',
-                        '0.0 km',
-                        Icons.location_on,
-                        Colors.orange,
-                      ),
-                      _construirCartaoEstatistica(
-                        'Foco',
-                        'Saúde',
-                        Icons.favorite,
-                        Colors.red,
-                      ),
-                      _construirCartaoEstatistica(
-                        'Status',
-                        widget.controller.estaRodando ? 'Ativo' : 'Pausado',
-                        Icons.bolt,
-                        Colors.blue,
-                      ),
-                    ],
+  Widget _buildCardGPS(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: CircleAvatar(
+          backgroundColor: Colors.orange.withValues(alpha: 0.2),
+          child: const Icon(Icons.location_on, color: Colors.orange),
+        ),
+        title: const Text('Distancia Percorrida'),
+        subtitle: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: 5),
+            Text(
+              '0.0 km',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            SizedBox(height: 5),
+            Text(
+              'O rastreamento via GPS sera programado depois...',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardInatividade(BuildContext context) {
+    final controller = widget.controller;
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(
+          color: controller.estaRodando
+              ? Colors.blue.withValues(alpha: 0.5)
+              : Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
+                  child: const Icon(Icons.timer, color: Colors.blue),
+                ),
+                const SizedBox(width: 15),
+                const Expanded(
+                  child: Text(
+                    'Alerta de Inatividade',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 24),
                   Text(
