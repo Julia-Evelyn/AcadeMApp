@@ -23,6 +23,7 @@ class HomeController extends ChangeNotifier {
   int tempoRestanteSegundos = AppPreferencesService.defaultAlertMinutes * 60;
   bool estaRodando = false;
   bool movimentoPendente = false;
+  bool estaMovendo = false;
 
   Future<void> carregarDadosIniciais() async {
     await carregarNomeUsuario();
@@ -101,6 +102,13 @@ class HomeController extends ChangeNotifier {
     movimentoPendente = false;
     notifyListeners();
     iniciarOuPausarTimer();
+  }
+
+  void atualizarMovimentoCamera(bool movendo) {
+    if (estaMovendo != movendo) {
+      estaMovendo = movendo;
+      notifyListeners();
+    }
   }
 
   @override
