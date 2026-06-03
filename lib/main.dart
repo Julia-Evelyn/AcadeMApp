@@ -18,6 +18,7 @@ import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
 
   final preferencesStore = await SharedPreferencesStore.create();
   final preferencesService = AppPreferencesService(preferencesStore);
@@ -25,6 +26,7 @@ Future<void> main() async {
   await FirebaseBootstrapService().initialize(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await Firebase.initializeApp();
 
   final themeController = ThemeController(
     preferencesService: preferencesService,

@@ -54,13 +54,12 @@ class _MainLayoutState extends State<MainLayout> {
       imagePickerService: widget.profileImagePickerService,
     );
     
-    // ⬇️ ATUALIZAÇÃO: Tela de Busca no índice 2 (meio)
     _telas = [
       HomeView(controller: _homeController),
       const TreinosView(),
       const BuscaTreinosView(), 
       const CorridaView(),
-      const PerfilView(),
+      PerfilView(controller: _perfilController),
     ];
   }
 
