@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../controller/home_controller.dart';
+import 'camera_motion_detector.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key, required this.controller});
@@ -280,6 +281,17 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Sensor de Movimento',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  CameraMotionDetector(controller: widget.controller),
                   const SizedBox(height: 35),
 
                   // 3. O CARD HERÓI: ALERTA DE INATIVIDADE (Estilo Layout Premium Azul)
