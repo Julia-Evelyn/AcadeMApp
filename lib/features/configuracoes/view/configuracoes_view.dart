@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../core/theme/theme_controller.dart';
 
 class ConfiguracoesView extends StatelessWidget {
@@ -9,11 +10,10 @@ class ConfiguracoesView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
-
+      appBar: AppBar(title: const Text('Configuracoes')),
       body: LayoutBuilder(
         builder: (context, constraints) {
-          double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
+          final double margemLateral = constraints.maxWidth > 600 ? 100 : 20;
 
           return ListView(
             padding: EdgeInsets.symmetric(
