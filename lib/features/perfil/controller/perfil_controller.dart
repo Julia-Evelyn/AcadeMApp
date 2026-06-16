@@ -1,7 +1,8 @@
+import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/media/profile_image_picker_service.dart';
 import '../../../core/services/preferences/app_preferences_service.dart';
@@ -14,6 +15,7 @@ class PerfilController extends ChangeNotifier {
   }) : _preferencesService = preferencesService,
        _imagePickerService = imagePickerService {
     carregarDadosSalvos();
+    _escutarAutenticacao();
   }
 
   final AppPreferencesService _preferencesService;
@@ -26,6 +28,9 @@ class PerfilController extends ChangeNotifier {
 
   bool estaEditando = false;
   File? imagemDoPerfil;
+  
+  User? usuarioAtual; 
+  StreamSubscription<User?>? _authSubscription;
 
   Future<void> carregarDadosSalvos() async {
     final perfil = await _preferencesService.loadPerfilData();
@@ -41,6 +46,17 @@ class PerfilController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _escutarAutenticacao() {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      usuarioAtual = user;
+      notifyListeners();
+    });
+  }
+
+  Future<void> deslogar() async {
+    await FirebaseAuth.instance.signOut();
+  }
+
   void iniciarEdicao() {
     estaEditando = true;
     notifyListeners();
@@ -54,6 +70,8 @@ class PerfilController extends ChangeNotifier {
 
     imagemDoPerfil = imagem;
     notifyListeners();
+    
+    await salvarPerfil();
   }
 
   Future<void> salvarPerfil() async {
@@ -72,6 +90,9 @@ class PerfilController extends ChangeNotifier {
   }
 
   String get nomeCompleto {
+    if (nomeController.text.isEmpty && sobrenomeController.text.isEmpty) {
+      return usuarioAtual != null ? 'Atleta PRO' : 'Visitante';
+    }
     return '${nomeController.text} ${sobrenomeController.text}'.trim();
   }
 
@@ -87,6 +108,7 @@ class PerfilController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     nomeController.dispose();
     sobrenomeController.dispose();
     pesoController.dispose();

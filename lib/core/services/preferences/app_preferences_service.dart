@@ -6,7 +6,7 @@ import 'key_value_store.dart';
 class AppPreferencesService {
   AppPreferencesService(this._store);
 
-  static const int defaultAlertMinutes = 45;
+  static const int defaultAlertMinutes = 30;
   static const int defaultAccentColorValue = 0xFF2196F3;
 
   static const String _themeModeKey = 'theme_mode';
