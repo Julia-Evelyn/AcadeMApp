@@ -267,74 +267,6 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: 30),
 
-  Widget _buildCardGPS(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange.withValues(alpha: 0.2),
-          child: const Icon(Icons.location_on, color: Colors.orange),
-        ),
-        title: const Text('Distancia Percorrida'),
-        subtitle: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 5),
-            Text(
-              '0.0 km',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 5),
-            Text(
-              'O rastreamento via GPS sera programado depois...',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardInatividade(BuildContext context) {
-    final controller = widget.controller;
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: BorderSide(
-          color: controller.estaRodando
-              ? Colors.blue.withValues(alpha: 0.5)
-              : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
-                  child: const Icon(Icons.timer, color: Colors.blue),
-                ),
-                const SizedBox(width: 15),
-                const Expanded(
-                  child: Text(
-                    'Alerta de Inatividade',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
                   Text(
                     'Sensor de Movimento',
                     style: TextStyle(
@@ -347,7 +279,6 @@ class _HomeViewState extends State<HomeView> {
                   CameraMotionDetector(controller: widget.controller),
                   const SizedBox(height: 35),
 
-                  // ALERTA DE INATIVIDADE 
                   Text(
                     'Controle de Atividade',
                     style: TextStyle(
@@ -417,7 +348,6 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             ),
 
-                            // Botão de Ajustar Tempo
                             GestureDetector(
                               onTap: widget.controller.estaRodando
                                   ? null
@@ -460,7 +390,6 @@ class _HomeViewState extends State<HomeView> {
                           ],
                         ),
 
-                        // CRONÔMETRO CENTRAL
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
                           child: Center(
@@ -477,7 +406,6 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
 
-                        // BOTÕES DE AÇÃO FLUTUANTES NO CARD
                         Row(
                           children: [
                             Expanded(
@@ -520,7 +448,6 @@ class _HomeViewState extends State<HomeView> {
                             ),
                             const SizedBox(width: 12),
 
-                            // Botão de Zerar
                             OutlinedButton(
                               onPressed:
                                   widget.controller.estaRodando ||
