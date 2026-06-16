@@ -28,7 +28,17 @@ class _HomeViewState extends State<HomeView> {
   }
 
   void _escutarAlertaDeMovimento() {
-    if (!mounted || _dialogAberto || !widget.controller.movimentoPendente) {
+    if (!mounted) {
+      return;
+    }
+
+    if (_dialogAberto && !widget.controller.movimentoPendente) {
+      _dialogAberto = false;
+      Navigator.of(context, rootNavigator: true).maybePop();
+      return;
+    }
+
+    if (_dialogAberto || !widget.controller.movimentoPendente) {
       return;
     }
 

@@ -98,16 +98,30 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> confirmarAlertaDeMovimento() async {
+    await _finalizarAlertaEReiniciarTimer();
+  }
+
+  Future<void> _finalizarAlertaEReiniciarTimer() async {
     await _alarmAudioService.stop();
     movimentoPendente = false;
-    notifyListeners();
-    iniciarOuPausarTimer();
+
+    if (!estaRodando) {
+      iniciarOuPausarTimer();
+    } else {
+      notifyListeners();
+    }
   }
 
   void atualizarMovimentoCamera(bool movendo) {
-    if (estaMovendo != movendo) {
-      estaMovendo = movendo;
-      notifyListeners();
+    if (estaMovendo == movendo) {
+      return;
+    }
+
+    estaMovendo = movendo;
+    notifyListeners();
+
+    if (movendo && movimentoPendente) {
+      unawaited(_finalizarAlertaEReiniciarTimer());
     }
   }
 
