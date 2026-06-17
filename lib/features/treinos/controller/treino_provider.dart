@@ -3,7 +3,7 @@ import '../../../core/services/database_service.dart';
 
 class TreinoProvider extends ChangeNotifier {
   final DatabaseService _dbService;
-  
+
   List<Map<String, dynamic>> _meusTreinos = [];
   bool _carregando = false;
 
@@ -16,7 +16,7 @@ class TreinoProvider extends ChangeNotifier {
 
   Future<void> buscarMeusTreinos() async {
     _carregando = true;
-    notifyListeners(); 
+    notifyListeners();
 
     try {
       _meusTreinos = await _dbService.buscarDados('meus_treinos');
@@ -25,7 +25,7 @@ class TreinoProvider extends ChangeNotifier {
     }
 
     _carregando = false;
-    notifyListeners(); 
+    notifyListeners();
   }
 
   Future<void> adicionarTreino(Map<String, dynamic> treino) async {
@@ -34,6 +34,18 @@ class TreinoProvider extends ChangeNotifier {
       await buscarMeusTreinos();
     } catch (e) {
       debugPrint("Erro ao salvar treino: $e");
+    }
+  }
+
+  // --- REMOVER TREINO ---
+  Future<void> removerTreino(String idTreino) async {
+    try {
+      await _dbService.deletarDado('meus_treinos', idTreino);
+
+      // Atualiza a lista na tela logo após apagar
+      await buscarMeusTreinos();
+    } catch (e) {
+      debugPrint("Erro ao remover treino: $e");
     }
   }
 }

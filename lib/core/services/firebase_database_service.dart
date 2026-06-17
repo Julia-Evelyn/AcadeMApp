@@ -13,6 +13,16 @@ class FirebaseDatabaseService implements DatabaseService {
   Future<List<Map<String, dynamic>>> buscarDados(String colecao) async {
     final snapshot = await _firestore.collection(colecao).get();
 
-    return snapshot.docs.map((doc) => doc.data()).toList();
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+
+      data['id'] = doc.id;
+      return data;
+    }).toList();
+  }
+
+  @override
+  Future<void> deletarDado(String colecao, String id) async {
+    await _firestore.collection(colecao).doc(id).delete();
   }
 }
