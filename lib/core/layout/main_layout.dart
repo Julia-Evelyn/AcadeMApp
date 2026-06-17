@@ -6,6 +6,7 @@ import '../../features/home/controller/home_controller.dart';
 import '../../features/home/view/home_view.dart';
 import '../../features/perfil/controller/perfil_controller.dart';
 import '../../features/perfil/view/perfil_view.dart';
+
 import '../../features/treinos/view/treinos_view.dart';
 
 import '../services/audio/alarm_audio_service.dart';
@@ -52,10 +53,8 @@ class _MainLayoutState extends State<MainLayout> {
       preferencesService: widget.preferencesService,
       alarmAudioService: AudioplayersAlarmAudioService(),
     );
-    _perfilController = PerfilController(
-      preferencesService: widget.preferencesService,
-      imagePickerService: widget.profileImagePickerService,
-    );
+
+    _perfilController = PerfilController(widget.preferencesService);
 
     _telas = [
       HomeView(controller: _homeController),

@@ -58,6 +58,27 @@ class AppPreferencesService {
     await _store.setInt(_alertMinutesKey, minutes);
   }
 
+  Future<void> forcarSincronizacao(User user) async {
+    try {
+      final dadosRemotos = await _dbService.buscarDados(
+        'usuarios_perfil/${user.uid}',
+      );
+      if (dadosRemotos.isNotEmpty) {
+        final dados = dadosRemotos.first;
+        await _store.setString(_profileNameKey, dados['nome'] ?? '');
+        await _store.setString(_profileLastNameKey, dados['sobrenome'] ?? '');
+        await _store.setString(_profileWeightKey, dados['peso'] ?? '');
+        await _store.setString(_profileHeightKey, dados['altura'] ?? '');
+
+        if (dados['caminhoImagem'] != null) {
+          await _store.setString(_profileImagePathKey, dados['caminhoImagem']);
+        }
+      }
+    } catch (e) {
+      debugPrint('Erro na sincronizacao: $e');
+    }
+  }
+
   Future<PerfilData> loadPerfilData() async {
     String nome = await _store.getString(_profileNameKey) ?? '';
     String sobrenome = await _store.getString(_profileLastNameKey) ?? '';
@@ -66,30 +87,15 @@ class AppPreferencesService {
     String? caminhoImagem = await _store.getString(_profileImagePathKey);
 
     if (nome.isEmpty) {
-      try {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final dadosRemotos = await _dbService.buscarDados(
-            'usuarios_perfil/${user.uid}',
-          );
-          if (dadosRemotos.isNotEmpty) {
-            final dados = dadosRemotos.first;
-            nome = dados['nome'] ?? '';
-            sobrenome = dados['sobrenome'] ?? '';
-            peso = dados['peso'] ?? '';
-            altura = dados['altura'] ?? '';
-            caminhoImagem = dados['caminhoImagem'];
-
-            await _store.setString(_profileNameKey, nome);
-            await _store.setString(_profileLastNameKey, sobrenome);
-            await _store.setString(_profileWeightKey, peso);
-            await _store.setString(_profileHeightKey, altura);
-            if (caminhoImagem != null) {
-              await _store.setString(_profileImagePathKey, caminhoImagem);
-            }
-          }
-        }
-      } catch (_) {}
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await forcarSincronizacao(user);
+        nome = await _store.getString(_profileNameKey) ?? '';
+        sobrenome = await _store.getString(_profileLastNameKey) ?? '';
+        peso = await _store.getString(_profileWeightKey) ?? '';
+        altura = await _store.getString(_profileHeightKey) ?? '';
+        caminhoImagem = await _store.getString(_profileImagePathKey);
+      }
     }
 
     return PerfilData(

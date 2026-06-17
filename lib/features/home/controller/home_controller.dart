@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:academyapp/core/database_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/services/audio/alarm_audio_service.dart';
 import '../../../core/services/preferences/app_preferences_service.dart';
@@ -13,10 +14,20 @@ class HomeController extends ChangeNotifier {
   }) : _preferencesService = preferencesService,
        _alarmAudioService = alarmAudioService {
     carregarDadosIniciais();
+
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      user,
+    ) async {
+      if (user != null) {
+        await _preferencesService.forcarSincronizacao(user);
+        await carregarDadosIniciais();
+      }
+    });
   }
 
   final AppPreferencesService _preferencesService;
   final AlarmAudioService _alarmAudioService;
+  late StreamSubscription<User?> _authSubscription;
 
   String nomeUsuario = 'Atleta';
   File? imagemDoPerfil;
@@ -53,6 +64,9 @@ class HomeController extends ChangeNotifier {
       } else {
         imagemDoPerfil = null;
       }
+      notifyListeners();
+    } else {
+      imagemDoPerfil = null;
       notifyListeners();
     }
   }
@@ -182,6 +196,7 @@ class HomeController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _timer?.cancel();
     unawaited(_alarmAudioService.dispose());
     super.dispose();

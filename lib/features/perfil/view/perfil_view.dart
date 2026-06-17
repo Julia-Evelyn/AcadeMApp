@@ -1,10 +1,6 @@
-import 'package:academyapp/core/theme/theme_controller.dart';
+import 'package:academyapp/features/auth/view/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-
-import '../../auth/view/login_view.dart';
-import '../../configuracoes/view/configuracoes_view.dart';
 
 import '../controller/perfil_controller.dart';
 
@@ -13,7 +9,6 @@ class PerfilView extends StatelessWidget {
 
   final PerfilController controller;
 
-  // Função para exibir o menu de escolha entre Câmera e Galeria
   void _mostrarOpcoesDeImagem(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -143,7 +138,6 @@ class PerfilView extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // FOTO DE PERFIL
                 Center(
                   child: Stack(
                     children: [
@@ -206,7 +200,6 @@ class PerfilView extends StatelessWidget {
                 const SizedBox(height: 24),
 
                 if (controller.estaEditando) ...[
-                  // FORMULÁRIO DE EDIÇÃO
                   _construirCampoTexto(
                     context,
                     'Nome',
@@ -217,7 +210,6 @@ class PerfilView extends StatelessWidget {
                     'Sobrenome',
                     controller.sobrenomeController,
                   ),
-
                   Row(
                     children: [
                       Expanded(
@@ -255,7 +247,6 @@ class PerfilView extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
                 ] else ...[
-                  // VISUALIZAÇÃO NORMAL DO PERFIL
                   Text(
                     controller.nomeCompleto,
                     style: TextStyle(
@@ -273,7 +264,6 @@ class PerfilView extends StatelessWidget {
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
-
                   if (controller.pesoFormatado.isNotEmpty ||
                       controller.alturaFormatada.isNotEmpty) ...[
                     const SizedBox(height: 16),
@@ -302,7 +292,6 @@ class PerfilView extends StatelessWidget {
                   const SizedBox(height: 40),
                 ],
 
-                // CARD DE DESTAQUE SINCRO (MODO VISITANTE)
                 if (!isLoggedIn && !controller.estaEditando)
                   Container(
                     width: double.infinity,
@@ -382,7 +371,6 @@ class PerfilView extends StatelessWidget {
                     ),
                   ),
 
-                // PAINEL DE MÉTRICAS (MODO LOGADO E NÃO ESTÁ EDITANDO)
                 if (isLoggedIn && !controller.estaEditando) ...[
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -405,7 +393,6 @@ class PerfilView extends StatelessWidget {
                   const SizedBox(height: 30),
                 ],
 
-                // MENUS INFERIORES
                 if (!controller.estaEditando) ...[
                   _construirOpcaoMenu(
                     context,
@@ -414,22 +401,12 @@ class PerfilView extends StatelessWidget {
                     isDark,
                     onTap: () {},
                   ),
-                  // BOTÃO DE CONFIGURAÇÕES COM O CONTROLLER INJETADO:
                   _construirOpcaoMenu(
                     context,
                     Icons.settings,
                     'Configurações',
                     isDark,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ConfiguracoesView(
-                            themeController: context.read<ThemeController>(),
-                          ),
-                        ),
-                      );
-                    },
+                    onTap: () => Navigator.pushNamed(context, '/configuracoes'),
                   ),
                   if (isLoggedIn)
                     _construirOpcaoMenu(
@@ -449,7 +426,6 @@ class PerfilView extends StatelessWidget {
     );
   }
 
-  // Componente visual para os campos de texto do formulário
   Widget _construirCampoTexto(
     BuildContext context,
     String label,
@@ -487,7 +463,6 @@ class PerfilView extends StatelessWidget {
     );
   }
 
-  // Componente visual para exibir as pílulas de peso e altura
   Widget _construirChipInfo(
     BuildContext context,
     IconData icone,
@@ -558,7 +533,6 @@ class PerfilView extends StatelessWidget {
     final corItem = isDestructive
         ? Colors.redAccent
         : (isDark ? Colors.white : Colors.black87);
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(

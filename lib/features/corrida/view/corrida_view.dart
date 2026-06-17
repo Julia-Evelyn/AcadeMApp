@@ -23,9 +23,11 @@ class _CorridaViewState extends State<CorridaView> {
   StreamSubscription<Position>? _positionStream;
   final MapController _mapController = MapController();
 
+  // Coordenada inicial padrão apenas para renderizar o mapa antes do GPS fixar
   LatLng _posicaoAtual = const LatLng(-15.799, -47.860);
   final List<LatLng> _rotaPercorrida = [];
   bool _buscandoSatelite = true;
+  bool _localizacaoRealFixada = false;
 
   @override
   void initState() {
@@ -63,6 +65,7 @@ class _CorridaViewState extends State<CorridaView> {
             ultimaPosicao.latitude,
             ultimaPosicao.longitude,
           );
+          _localizacaoRealFixada = true;
         });
         _mapController.move(_posicaoAtual, 16.0);
       }
@@ -78,6 +81,7 @@ class _CorridaViewState extends State<CorridaView> {
         setState(() {
           _posicaoAtual = LatLng(posExata.latitude, posExata.longitude);
           _buscandoSatelite = false;
+          _localizacaoRealFixada = true;
         });
         _mapController.move(_posicaoAtual, 17.0);
       }
@@ -110,7 +114,11 @@ class _CorridaViewState extends State<CorridaView> {
       _distanciaTotalMetros = 0.0;
       _segundosDecorridos = 0;
       _rotaPercorrida.clear();
-      _rotaPercorrida.add(_posicaoAtual);
+
+      // Só adiciona à rota se já tivermos certeza de que não é a posição genérica de Brasília
+      if (_localizacaoRealFixada) {
+        _rotaPercorrida.add(_posicaoAtual);
+      }
     });
 
     _cronometro = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -122,25 +130,50 @@ class _CorridaViewState extends State<CorridaView> {
       distanceFilter: 2,
     );
 
-    _positionStream = Geolocator.getPositionStream(locationSettings: config)
-        .listen((Position novaPos) {
-          LatLng novaLatLng = LatLng(novaPos.latitude, novaPos.longitude);
+    _positionStream = Geolocator.getPositionStream(locationSettings: config).listen((
+      Position novaPos,
+    ) {
+      // FILTRO 1: Ignora precisões muito ruins (maiores que 35 metros) para evitar pular de uma antena para outra
+      if (novaPos.accuracy > 35) return;
 
-          double distanciaPercorrida = Geolocator.distanceBetween(
-            _posicaoAtual.latitude,
-            _posicaoAtual.longitude,
-            novaPos.latitude,
-            novaPos.longitude,
-          );
+      LatLng novaLatLng = LatLng(novaPos.latitude, novaPos.longitude);
 
-          setState(() {
-            _distanciaTotalMetros += distanciaPercorrida;
-            _posicaoAtual = novaLatLng;
-            _rotaPercorrida.add(novaLatLng);
-          });
-
-          _mapController.move(novaLatLng, 17.0);
+      // Se a rota ainda estiver vazia, define este como o ponto de partida real
+      if (_rotaPercorrida.isEmpty) {
+        setState(() {
+          _posicaoAtual = novaLatLng;
+          _rotaPercorrida.add(novaLatLng);
+          _localizacaoRealFixada = true;
         });
+        _mapController.move(novaLatLng, 17.0);
+        return;
+      }
+
+      double distanciaPercorrida = Geolocator.distanceBetween(
+        _posicaoAtual.latitude,
+        _posicaoAtual.longitude,
+        novaPos.latitude,
+        novaPos.longitude,
+      );
+
+      // FILTRO 2: Ignora "teletransportes". Se a distância capturada em 2 metros de filtro
+      // for maior do que 50 metros instantâneos, é um salto de calibragem do satélite.
+      if (distanciaPercorrida > 50.0) {
+        setState(() {
+          _posicaoAtual = novaLatLng;
+        });
+        _mapController.move(novaLatLng, 17.0);
+        return;
+      }
+
+      setState(() {
+        _distanciaTotalMetros += distanciaPercorrida;
+        _posicaoAtual = novaLatLng;
+        _rotaPercorrida.add(novaLatLng);
+      });
+
+      _mapController.move(novaLatLng, 17.0);
+    });
   }
 
   Future<void> _pararESalvarCorrida() async {
@@ -182,11 +215,9 @@ class _CorridaViewState extends State<CorridaView> {
 
   @override
   Widget build(BuildContext context) {
-    // === CAPTURA AS CORES OFICIAIS DO APLICATIVO ===
     final Color corDestaque = Theme.of(context).colorScheme.primary;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // O painel inferior usa a cor de destaque no tema claro e cor de superfície no tema escuro
     final Color corFundoPainel = isDark
         ? Theme.of(context).colorScheme.surfaceContainerHighest
         : corDestaque;
@@ -233,7 +264,7 @@ class _CorridaViewState extends State<CorridaView> {
                           height: 20,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: corDestaque, 
+                              color: corDestaque,
                               shape: BoxShape.circle,
                               border: Border.all(color: Colors.white, width: 3),
                             ),
