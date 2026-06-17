@@ -4,16 +4,13 @@ import '../controller/treino_provider.dart';
 import 'treino_ativo_view.dart';
 import 'criar_treino_view.dart';
 import 'detalhes_treino_personalizado_view.dart';
+import 'package:academyapp/core/widgets/card_treino.dart';
 
 class TreinosView extends StatelessWidget {
   const TreinosView({super.key});
 
-  void _mostrarConfirmacaoExclusao(
-    BuildContext context,
-    TreinoProvider provider,
-    String idTreino,
-  ) {
-    showDialog(
+  Future<bool?> _mostrarConfirmacaoExclusao(BuildContext context) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -29,7 +26,7 @@ class TreinosView extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
           ),
           ElevatedButton(
@@ -38,10 +35,7 @@ class TreinosView extends StatelessWidget {
               foregroundColor: Colors.white,
               elevation: 0,
             ),
-            onPressed: () {
-              provider.removerTreino(idTreino);
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context, true),
             child: const Text('Remover'),
           ),
         ],
@@ -75,10 +69,39 @@ class TreinosView extends StatelessWidget {
               final treinoSalvo = treinoProvider.meusTreinos[index];
               final String? treinoId = treinoSalvo['id'];
 
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
+              return Dismissible(
+                key: Key(treinoId ?? index.toString()),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 24),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.delete_sweep, color: Colors.white, size: 32),
+                ),
+                confirmDismiss: (direction) async {
+                  return await _mostrarConfirmacaoExclusao(context);
+                },
+                onDismissed: (direction) {
+                  if (treinoId != null) {
+                    treinoProvider.removerTreino(treinoId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Treino removido da sua rotina.'),
+                        backgroundColor: Colors.grey,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                child: CardTreino(
+                  titulo: treinoSalvo['nome'] ?? 'Treino',
+                  duracao: treinoSalvo['objetivo'] ?? 'Geral',
+                  dificuldade: treinoSalvo['dificuldade'] ?? 'Variável',
+                  isApi: treinoSalvo['objetivo'] != 'Personalizado', 
                   onTap: () {
                     if (treinoSalvo['objetivo'] == 'Personalizado') {
                       Navigator.push(
@@ -99,71 +122,6 @@ class TreinosView extends StatelessWidget {
                       );
                     }
                   },
-                  child: MergeSemantics(
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        child: ExcludeSemantics(
-                          child: Icon(
-                            Icons.fitness_center,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        treinoSalvo['nome'] ?? 'Treino',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        '${treinoSalvo['objetivo'] ?? 'Geral'} • ${treinoSalvo['dificuldade'] ?? 'Variável'}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Semantics(
-                            label: 'Remover treino',
-                            button: true,
-                            child: IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.redAccent,
-                              ),
-                              onPressed: () {
-                                if (treinoId != null) {
-                                  _mostrarConfirmacaoExclusao(
-                                    context,
-                                    treinoProvider,
-                                    treinoId,
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Erro: Não foi possível identificar o treino.',
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          ExcludeSemantics(
-                            child: Icon(
-                              Icons.play_circle_fill,
-                              size: 36,
-                              color: Theme.of(context).primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ),
               );
             },

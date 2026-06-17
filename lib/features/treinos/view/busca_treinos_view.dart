@@ -76,12 +76,15 @@ class _BuscaTreinosViewState extends State<BuscaTreinosView> {
 
   IconData _obterIcone(String categoria) {
     final cat = categoria.toLowerCase();
-    if (cat.contains('arms') || cat.contains('biceps'))
+    if (cat.contains('arms') || cat.contains('biceps')) {
       return Icons.sports_gymnastics;
-    if (cat.contains('legs') || cat.contains('quads'))
+    }
+    if (cat.contains('legs') || cat.contains('quads')) {
       return Icons.directions_walk;
-    if (cat.contains('chest') || cat.contains('pectorals'))
+    }
+    if (cat.contains('chest') || cat.contains('pectorals')) {
       return Icons.accessibility_new;
+    }
     if (cat.contains('abs')) return Icons.airline_seat_flat;
     return Icons.fitness_center;
   }
