@@ -221,41 +221,53 @@ class _HomeViewState extends State<HomeView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. CABEÇALHO PREMIUM
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '$_saudacao,',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: isDark
-                                  ? Colors.grey[400]
-                                  : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                  // CABEÇALHO
+                  MergeSemantics(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$_saudacao,',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: isDark
+                                      ? Colors.grey[400]
+                                      : Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${widget.controller.nomeUsuario}!',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w900,
+                                  color: isDark ? Colors.white : Colors.black87,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        ExcludeSemantics(
+                          child: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: corDestaque.withValues(
+                              alpha: 0.15,
+                            ),
+                            child: Icon(
+                              Icons.person,
+                              size: 30,
+                              color: corDestaque,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${widget.controller.nomeUsuario}!',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w900,
-                              color: isDark ? Colors.white : Colors.black87,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: corDestaque.withValues(alpha: 0.15),
-                        child: Icon(Icons.person, size: 30, color: corDestaque),
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -267,74 +279,6 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: 30),
 
-  Widget _buildCardGPS(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: CircleAvatar(
-          backgroundColor: Colors.orange.withValues(alpha: 0.2),
-          child: const Icon(Icons.location_on, color: Colors.orange),
-        ),
-        title: const Text('Distancia Percorrida'),
-        subtitle: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 5),
-            Text(
-              '0.0 km',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-              ),
-            ),
-            SizedBox(height: 5),
-            Text(
-              'O rastreamento via GPS sera programado depois...',
-              style: TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardInatividade(BuildContext context) {
-    final controller = widget.controller;
-
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-        side: BorderSide(
-          color: controller.estaRodando
-              ? Colors.blue.withValues(alpha: 0.5)
-              : Colors.transparent,
-          width: 2,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: Colors.blue.withValues(alpha: 0.2),
-                  child: const Icon(Icons.timer, color: Colors.blue),
-                ),
-                const SizedBox(width: 15),
-                const Expanded(
-                  child: Text(
-                    'Alerta de Inatividade',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 24),
                   Text(
                     'Sensor de Movimento',
                     style: TextStyle(
@@ -347,7 +291,6 @@ class _HomeViewState extends State<HomeView> {
                   CameraMotionDetector(controller: widget.controller),
                   const SizedBox(height: 35),
 
-                  // ALERTA DE INATIVIDADE 
                   Text(
                     'Controle de Atividade',
                     style: TextStyle(
@@ -394,8 +337,11 @@ class _HomeViewState extends State<HomeView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 12,
+                          runSpacing: 12,
                           children: [
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -417,134 +363,151 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             ),
 
-                            // Botão de Ajustar Tempo
-                            GestureDetector(
-                              onTap: widget.controller.estaRodando
-                                  ? null
-                                  : _mostrarSeletorDeTempo,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: widget.controller.estaRodando
-                                      ? Colors.white.withValues(alpha: 0.05)
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      widget.controller.textoDoBotaoTempo,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
-                                        color: widget.controller.estaRodando
-                                            ? Colors.white60
-                                            : Colors.black87,
+                            Semantics(
+                              button: true,
+                              label: 'Editar tempo de inatividade',
+                              child: GestureDetector(
+                                onTap: widget.controller.estaRodando
+                                    ? null
+                                    : _mostrarSeletorDeTempo,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: widget.controller.estaRodando
+                                        ? Colors.white.withValues(alpha: 0.05)
+                                        : Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        widget.controller.textoDoBotaoTempo,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                          color: widget.controller.estaRodando
+                                              ? Colors.white60
+                                              : Colors.black87,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Icon(
-                                      Icons.edit,
-                                      size: 14,
-                                      color: widget.controller.estaRodando
-                                          ? Colors.white30
-                                          : Colors.black54,
-                                    ),
-                                  ],
+                                      const SizedBox(width: 6),
+                                      Icon(
+                                        Icons.edit,
+                                        size: 14,
+                                        color: widget.controller.estaRodando
+                                            ? Colors.white30
+                                            : Colors.black54,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
 
-                        // CRONÔMETRO CENTRAL
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
                           child: Center(
-                            child: Text(
-                              widget.controller.tempoFormatado,
-                              style: const TextStyle(
-                                fontSize: 64,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 2,
-                                height: 1.0,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                widget.controller.tempoFormatado,
+                                style: const TextStyle(
+                                  fontSize: 64,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 2,
+                                  height: 1.0,
+                                ),
                               ),
                             ),
                           ),
                         ),
 
-                        // BOTÕES DE AÇÃO FLUTUANTES NO CARD
                         Row(
                           children: [
                             Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed:
-                                    widget.controller.iniciarOuPausarTimer,
-                                icon: Icon(
-                                  widget.controller.estaRodando
-                                      ? Icons.pause
-                                      : Icons.play_arrow,
-                                  color: widget.controller.estaRodando
-                                      ? Colors.black87
-                                      : Colors.white,
-                                ),
-                                label: Text(
-                                  widget.controller.estaRodando
-                                      ? 'Pausar'
-                                      : 'Iniciar',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
+                              child: Semantics(
+                                label: widget.controller.estaRodando
+                                    ? 'Pausar monitoramento'
+                                    : 'Iniciar monitoramento',
+                                child: ElevatedButton.icon(
+                                  onPressed:
+                                      widget.controller.iniciarOuPausarTimer,
+                                  icon: Icon(
+                                    widget.controller.estaRodando
+                                        ? Icons.pause
+                                        : Icons.play_arrow,
                                     color: widget.controller.estaRodando
                                         ? Colors.black87
                                         : Colors.white,
                                   ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: widget.controller.estaRodando
-                                      ? Colors.amber
-                                      : Colors.white.withValues(alpha: 0.25),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
+                                  label: Text(
+                                    widget.controller.estaRodando
+                                        ? 'Pausar'
+                                        : 'Iniciar',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: widget.controller.estaRodando
+                                          ? Colors.black87
+                                          : Colors.white,
+                                    ),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(16),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        widget.controller.estaRodando
+                                        ? Colors.amber
+                                        : Colors.white.withValues(alpha: 0.25),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 12),
 
-                            // Botão de Zerar
-                            OutlinedButton(
-                              onPressed:
-                                  widget.controller.estaRodando ||
-                                      widget.controller.tempoRestanteSegundos <
-                                          (widget.controller.minutosEscolhidos *
-                                              60)
-                                  ? widget.controller.resetarTimer
-                                  : null,
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Colors.white30,
-                                  width: 1.5,
+                            Semantics(
+                              label: 'Zerar cronômetro',
+                              child: OutlinedButton(
+                                onPressed:
+                                    widget.controller.estaRodando ||
+                                        widget
+                                                .controller
+                                                .tempoRestanteSegundos <
+                                            (widget
+                                                    .controller
+                                                    .minutosEscolhidos *
+                                                60)
+                                    ? widget.controller.resetarTimer
+                                    : null,
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(
+                                    color: Colors.white30,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                    horizontal: 20,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                  horizontal: 20,
+                                child: const Icon(
+                                  Icons.refresh,
+                                  color: Colors.white,
                                 ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: const Icon(
-                                Icons.refresh,
-                                color: Colors.white,
                               ),
                             ),
                           ],
@@ -559,57 +522,6 @@ class _HomeViewState extends State<HomeView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _construirCartaoEstatistica(
-    String titulo,
-    String valor,
-    IconData icone,
-    Color cor,
-  ) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      width: (MediaQuery.of(context).size.width - 48 - 32) / 3,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(context).colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icone, color: cor, size: 26),
-          const SizedBox(height: 10),
-          Text(
-            valor,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            titulo,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

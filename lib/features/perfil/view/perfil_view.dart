@@ -18,46 +18,75 @@ class PerfilView extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: isDark ? Theme.of(context).colorScheme.surface : Colors.white,
+            color: isDark
+                ? Theme.of(context).colorScheme.surface
+                : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40, height: 5,
-                margin: const EdgeInsets.only(bottom: 20),
-                decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(10)),
-              ),
-              Text('Foto de Perfil', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.camera_alt, color: Colors.blue),
+          // ACESSIBILIDADE/RESPONSIVIDADE: O SafeArea impede que menus cubram áreas sensíveis da tela
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-                title: const Text('Tirar nova foto', style: TextStyle(fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.pegarImagem(ImageSource.camera);
-                },
-              ),
-              const SizedBox(height: 10),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: Colors.purple.withValues(alpha: 0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.photo_library, color: Colors.purple),
+                Text(
+                  'Foto de Perfil',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
-                title: const Text('Escolher da galeria', style: TextStyle(fontWeight: FontWeight.bold)),
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.pegarImagem(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.camera_alt, color: Colors.blue),
+                  ),
+                  title: const Text(
+                    'Tirar nova foto',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.pegarImagem(ImageSource.camera);
+                  },
+                ),
+                const SizedBox(height: 10),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.photo_library,
+                      color: Colors.purple,
+                    ),
+                  ),
+                  title: const Text(
+                    'Escolher da galeria',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.pegarImagem(ImageSource.gallery);
+                  },
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
           ),
         );
       },
@@ -76,21 +105,33 @@ class PerfilView extends StatelessWidget {
         final bool isLoggedIn = controller.usuarioAtual != null;
 
         return Scaffold(
-          backgroundColor: isDark ? tema.colorScheme.surface : const Color(0xFFF4F6F9),
+          backgroundColor: isDark
+              ? tema.colorScheme.surface
+              : const Color(0xFFF4F6F9),
           appBar: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             actions: [
-              // Botão na AppBar para alternar entre Salvar e Editar
-              IconButton(
-                icon: Icon(controller.estaEditando ? Icons.check : Icons.edit, color: corDestaque),
-                onPressed: () {
-                  if (controller.estaEditando) {
-                    controller.salvarPerfil();
-                  } else {
-                    controller.iniciarEdicao();
-                  }
-                },
+              // ACESSIBILIDADE: Envelopamos o botão com a ação exata para o TalkBack
+              Semantics(
+                label: controller.estaEditando
+                    ? 'Salvar perfil'
+                    : 'Editar perfil',
+                button: true,
+                child: IconButton(
+                  tooltip: controller.estaEditando ? 'Salvar' : 'Editar',
+                  icon: Icon(
+                    controller.estaEditando ? Icons.check : Icons.edit,
+                    color: corDestaque,
+                  ),
+                  onPressed: () {
+                    if (controller.estaEditando) {
+                      controller.salvarPerfil();
+                    } else {
+                      controller.iniciarEdicao();
+                    }
+                  },
+                ),
               ),
               const SizedBox(width: 8),
             ],
@@ -103,32 +144,58 @@ class PerfilView extends StatelessWidget {
                 Center(
                   child: Stack(
                     children: [
-                      Container(
-                        width: 130, height: 130,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: corDestaque.withValues(alpha: 0.1),
-                          border: Border.all(color: corDestaque, width: 4),
-                          image: controller.imagemDoPerfil != null
-                              ? DecorationImage(image: FileImage(controller.imagemDoPerfil!), fit: BoxFit.cover)
+                      // ACESSIBILIDADE: Marcamos a foto como imagem para o leitor narrar
+                      Semantics(
+                        image: true,
+                        label: 'Foto de Perfil',
+                        child: Container(
+                          width: 130,
+                          height: 130,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: corDestaque.withValues(alpha: 0.1),
+                            border: Border.all(color: corDestaque, width: 4),
+                            image: controller.imagemDoPerfil != null
+                                ? DecorationImage(
+                                    image: FileImage(
+                                      controller.imagemDoPerfil!,
+                                    ),
+                                    fit: BoxFit.cover,
+                                  )
+                                : null,
+                          ),
+                          child: controller.imagemDoPerfil == null
+                              ? Icon(Icons.person, size: 70, color: corDestaque)
                               : null,
                         ),
-                        child: controller.imagemDoPerfil == null 
-                            ? Icon(Icons.person, size: 70, color: corDestaque)
-                            : null, 
                       ),
                       Positioned(
-                        bottom: 0, right: 0,
-                        child: GestureDetector(
-                          // Abre o menu de opções
-                          onTap: () => _mostrarOpcoesDeImagem(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: corDestaque, shape: BoxShape.circle,
-                              border: Border.all(color: isDark ? tema.colorScheme.surface : const Color(0xFFF4F6F9), width: 4),
+                        bottom: 0,
+                        right: 0,
+                        // ACESSIBILIDADE: Envelopamos o botão flutuante da câmera
+                        child: Semantics(
+                          button: true,
+                          label: 'Alterar foto de perfil',
+                          child: GestureDetector(
+                            onTap: () => _mostrarOpcoesDeImagem(context),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: corDestaque,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: isDark
+                                      ? tema.colorScheme.surface
+                                      : const Color(0xFFF4F6F9),
+                                  width: 4,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 22,
+                              ),
                             ),
-                            child: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
                           ),
                         ),
                       ),
@@ -139,13 +206,36 @@ class PerfilView extends StatelessWidget {
 
                 if (controller.estaEditando) ...[
                   // FORMULÁRIO DE EDIÇÃO
-                  _construirCampoTexto(context, 'Nome', controller.nomeController),
-                  _construirCampoTexto(context, 'Sobrenome', controller.sobrenomeController),
+                  _construirCampoTexto(
+                    context,
+                    'Nome',
+                    controller.nomeController,
+                  ),
+                  _construirCampoTexto(
+                    context,
+                    'Sobrenome',
+                    controller.sobrenomeController,
+                  ),
+
                   Row(
                     children: [
-                      Expanded(child: _construirCampoTexto(context, 'Peso (kg)', controller.pesoController, isNumeric: true)),
+                      Expanded(
+                        child: _construirCampoTexto(
+                          context,
+                          'Peso (kg)',
+                          controller.pesoController,
+                          isNumeric: true,
+                        ),
+                      ),
                       const SizedBox(width: 16),
-                      Expanded(child: _construirCampoTexto(context, 'Altura (cm)', controller.alturaController, isNumeric: true)),
+                      Expanded(
+                        child: _construirCampoTexto(
+                          context,
+                          'Altura (cm)',
+                          controller.alturaController,
+                          isNumeric: true,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -154,9 +244,12 @@ class PerfilView extends StatelessWidget {
                     icon: const Icon(Icons.save),
                     label: const Text('Salvar Alterações'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: corDestaque, foregroundColor: Colors.white,
+                      backgroundColor: corDestaque,
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -164,26 +257,45 @@ class PerfilView extends StatelessWidget {
                   // VISUALIZAÇÃO NORMAL DO PERFIL
                   Text(
                     controller.nomeCompleto,
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: isDark ? Colors.white : Colors.black87, letterSpacing: -0.5),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : Colors.black87,
+                      letterSpacing: -0.5,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    isLoggedIn ? controller.usuarioAtual!.email! : 'Seus dados estão salvos apenas neste aparelho.',
+                    isLoggedIn
+                        ? controller.usuarioAtual!.email!
+                        : 'Seus dados estão salvos apenas neste aparelho.',
                     style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                    textAlign: TextAlign.center,
                   ),
-                  
-                  // Mostra Peso e Altura se o usuário tiver preenchido
-                  if (controller.pesoFormatado.isNotEmpty || controller.alturaFormatada.isNotEmpty) ...[
+
+                  if (controller.pesoFormatado.isNotEmpty ||
+                      controller.alturaFormatada.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    // RESPONSIVIDADE: Este Wrap aqui é seguro, pois só guarda os "chips" de texto.
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 12,
+                      runSpacing: 8,
                       children: [
                         if (controller.pesoFormatado.isNotEmpty)
-                          _construirChipInfo(context, Icons.scale, controller.pesoFormatado),
-                        if (controller.pesoFormatado.isNotEmpty && controller.alturaFormatada.isNotEmpty)
-                          const SizedBox(width: 12),
+                          _construirChipInfo(
+                            context,
+                            Icons.scale,
+                            controller.pesoFormatado,
+                            'Peso atual',
+                          ),
                         if (controller.alturaFormatada.isNotEmpty)
-                          _construirChipInfo(context, Icons.height, controller.alturaFormatada),
+                          _construirChipInfo(
+                            context,
+                            Icons.height,
+                            controller.alturaFormatada,
+                            'Altura atual',
+                          ),
                       ],
                     ),
                   ],
@@ -193,29 +305,78 @@ class PerfilView extends StatelessWidget {
                 // CARD DE DESTAQUE SINCRO (MODO VISITANTE)
                 if (!isLoggedIn && !controller.estaEditando)
                   Container(
-                    width: double.infinity, padding: const EdgeInsets.all(28),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [corDestaque, corDestaque.withValues(alpha: 0.7)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                      gradient: LinearGradient(
+                        colors: [
+                          corDestaque,
+                          corDestaque.withValues(alpha: 0.7),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(30),
-                      boxShadow: [BoxShadow(color: corDestaque.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 10))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: corDestaque.withValues(alpha: 0.4),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
                     ),
                     child: Column(
                       children: [
-                        const Icon(Icons.cloud_sync, color: Colors.white, size: 48),
+                        const Icon(
+                          Icons.cloud_sync,
+                          color: Colors.white,
+                          size: 48,
+                        ),
                         const SizedBox(height: 16),
-                        const Text('Sincronize na Nuvem', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Sincronize na Nuvem',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
-                        const Text('Crie uma conta para salvar suas corridas, treinos e não perder o progresso.', textAlign: TextAlign.center, style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4)),
+                        const Text(
+                          'Crie uma conta para salvar suas corridas, treinos e não perder o progresso.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginView()));
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const LoginView(),
+                              ),
+                            );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white, foregroundColor: corDestaque, elevation: 0,
-                            minimumSize: const Size(double.infinity, 55), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            backgroundColor: Colors.white,
+                            foregroundColor: corDestaque,
+                            elevation: 0,
+                            minimumSize: const Size(double.infinity, 55),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
-                          child: const Text('Entrar / Cadastrar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          child: const Text(
+                            'Entrar / Cadastrar',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -227,22 +388,49 @@ class PerfilView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _construirColunaEstatistica('Corridas', '0', isDark),
-                      Container(height: 40, width: 1, color: Colors.grey.withValues(alpha: 0.3)),
+                      Container(
+                        height: 40,
+                        width: 1,
+                        color: Colors.grey.withValues(alpha: 0.3),
+                      ),
                       _construirColunaEstatistica('Distância', '0 km', isDark),
-                      Container(height: 40, width: 1, color: Colors.grey.withValues(alpha: 0.3)),
+                      Container(
+                        height: 40,
+                        width: 1,
+                        color: Colors.grey.withValues(alpha: 0.3),
+                      ),
                       _construirColunaEstatistica('Dias', '0', isDark),
                     ],
                   ),
                   const SizedBox(height: 30),
                 ],
-                
+
                 // MENUS INFERIORES
                 if (!controller.estaEditando) ...[
-                  _construirOpcaoMenu(context, Icons.history, 'Histórico de Corridas', isDark, onTap: () {}),
-                  _construirOpcaoMenu(context, Icons.settings, 'Configurações', isDark, onTap: () {}),
+                  _construirOpcaoMenu(
+                    context,
+                    Icons.history,
+                    'Histórico de Corridas',
+                    isDark,
+                    onTap: () {},
+                  ),
+                  _construirOpcaoMenu(
+                    context,
+                    Icons.settings,
+                    'Configurações',
+                    isDark,
+                    onTap: () {},
+                  ),
                   if (isLoggedIn)
-                    _construirOpcaoMenu(context, Icons.logout, 'Sair da Conta', isDark, isDestructive: true, onTap: controller.deslogar),
-                ]
+                    _construirOpcaoMenu(
+                      context,
+                      Icons.logout,
+                      'Sair da Conta',
+                      isDark,
+                      isDestructive: true,
+                      onTap: controller.deslogar,
+                    ),
+                ],
               ],
             ),
           ),
@@ -252,74 +440,158 @@ class PerfilView extends StatelessWidget {
   }
 
   // Componente visual para os campos de texto do formulário
-  Widget _construirCampoTexto(BuildContext context, String label, TextEditingController textController, {bool isNumeric = false}) {
+  Widget _construirCampoTexto(
+    BuildContext context,
+    String label,
+    TextEditingController textController, {
+    bool isNumeric = false,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      child: TextField(
-        controller: textController,
-        keyboardType: isNumeric ? TextInputType.number : TextInputType.name,
-        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Colors.grey),
-          filled: true,
-          fillColor: isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.white,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      // ACESSIBILIDADE: Semantics no TextField
+      child: Semantics(
+        textField: true,
+        label: 'Campo de texto para digitar $label',
+        child: TextField(
+          controller: textController,
+          keyboardType: isNumeric ? TextInputType.number : TextInputType.name,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+          decoration: InputDecoration(
+            labelText: label,
+            labelStyle: const TextStyle(color: Colors.grey),
+            filled: true,
+            fillColor: isDark
+                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                : Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 16,
+            ),
+          ),
         ),
       ),
     );
   }
 
-  // Componente visual para exibir as pílulas de peso e altura
-  Widget _construirChipInfo(BuildContext context, IconData icone, String valor) {
+  // Componente visual para exibir as pílulas de peso e altura (Adicionado label de Semantics)
+  Widget _construirChipInfo(
+    BuildContext context,
+    IconData icone,
+    String valor,
+    String labelSemantica,
+  ) {
     final corDestaque = Theme.of(context).colorScheme.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: corDestaque.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icone, size: 16, color: corDestaque),
-          const SizedBox(width: 6),
-          Text(valor, style: TextStyle(fontWeight: FontWeight.bold, color: corDestaque)),
-        ],
+    return MergeSemantics(
+      child: Semantics(
+        label: '$labelSemantica: $valor',
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: corDestaque.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icone, size: 16, color: corDestaque),
+              const SizedBox(width: 6),
+              Text(
+                valor,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: corDestaque,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _construirColunaEstatistica(String titulo, String valor, bool isDark) {
-    return Column(
-      children: [
-        Text(valor, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-        Text(titulo, style: const TextStyle(fontSize: 14, color: Colors.grey)),
-      ],
+    // ACESSIBILIDADE: MergeSemantics junta a leitura! "0 Corridas" em vez de ler "0" e depois ler "Corridas".
+    return MergeSemantics(
+      child: Semantics(
+        label: '$valor $titulo',
+        child: Column(
+          children: [
+            Text(
+              valor,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
+            ),
+            Text(
+              titulo,
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _construirOpcaoMenu(BuildContext context, IconData icone, String titulo, bool isDark, {bool isDestructive = false, required VoidCallback onTap}) {
-    final corItem = isDestructive ? Colors.redAccent : (isDark ? Colors.white : Colors.black87);
-    
+  Widget _construirOpcaoMenu(
+    BuildContext context,
+    IconData icone,
+    String titulo,
+    bool isDark, {
+    bool isDestructive = false,
+    required VoidCallback onTap,
+  }) {
+    final corItem = isDestructive
+        ? Colors.redAccent
+        : (isDark ? Colors.white : Colors.black87);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: isDark ? Theme.of(context).colorScheme.surfaceContainerHighest : Colors.white,
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 5))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
+      // ACESSIBILIDADE: (ExcludeSemantics)
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Container(
           padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(color: corItem.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-          child: Icon(icone, color: corItem, size: 24),
+          decoration: BoxDecoration(
+            color: corItem.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: ExcludeSemantics(child: Icon(icone, color: corItem, size: 24)),
         ),
-        title: Text(titulo, style: TextStyle(fontWeight: FontWeight.bold, color: corItem, fontSize: 16)),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
+        title: Text(
+          titulo,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: corItem,
+            fontSize: 16,
+          ),
+        ),
+        trailing: ExcludeSemantics(
+          child: Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: Colors.grey[400],
+          ),
+        ),
         onTap: onTap,
       ),
     );
