@@ -12,8 +12,8 @@ class TreinoAtivoView extends StatefulWidget {
 }
 
 class _TreinoAtivoViewState extends State<TreinoAtivoView> {
-  final int _tempoExercicio = 30; 
-  final int _tempoDescanso = 15; 
+  final int _tempoExercicio = 30;
+  final int _tempoDescanso = 15;
   final int _totalSeries = 3;
 
   int _serieAtual = 1;
@@ -95,9 +95,9 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Center(child: Text('🎉 Parabéns!')),
         content: const Text(
-          'Você concluiu todas as séries deste exercício com sucesso!', 
-          textAlign: TextAlign.center, 
-          style: TextStyle(fontSize: 16)
+          'Você concluiu todas as séries deste exercício com sucesso!',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 16),
         ),
         actions: [
           SizedBox(
@@ -123,7 +123,9 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
 
   @override
   Widget build(BuildContext context) {
-    final corFase = _estaDescansando ? Colors.teal : Theme.of(context).primaryColor;
+    final corFase = _estaDescansando
+        ? Colors.teal
+        : Theme.of(context).primaryColor;
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.treino['nome'] ?? 'Exercício')),
@@ -132,17 +134,66 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
           Container(
             width: double.infinity,
             height: 250,
-            color: Colors.white, 
-            child: Image.network(
-              widget.treino['gifUrl'] ?? 'https://media.giphy.com/media/3o7TKrEzvLbgqjSYbW/giphy.gif',
-              fit: BoxFit.contain,
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return const Center(child: CircularProgressIndicator());
+            color: Colors.white,
+            child: Builder(
+              builder: (context) {
+                final url = widget.treino['gifUrl']?.toString() ?? '';
+
+                // Se o banco de dados não tiver a URL, já desenhamos o placeholder direto
+                if (url.isEmpty) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.fitness_center,
+                          size: 60,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          'Sem demonstração',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Image.network(
+                  url.replaceAll('http://', 'https://'),
+                  fit: BoxFit.contain,
+                  headers: const {
+                    'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept':
+                        'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+                  },
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(child: CircularProgressIndicator());
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.broken_image,
+                            size: 50,
+                            color: Colors.grey,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Erro ao carregar GIF',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
               },
-              errorBuilder: (context, error, stackTrace) => const Center(
-                child: Icon(Icons.broken_image, size: 50, color: Colors.grey)
-              ),
             ),
           ),
           Expanded(
@@ -151,36 +202,59 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Theme.of(context).scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, -5))
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
                 ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
-                      color: corFase.withValues(alpha: 0.2), 
-                      borderRadius: BorderRadius.circular(20)
+                      color: corFase.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _estaDescansando ? 'Modo Descanso' : 'Série $_serieAtual de $_totalSeries', 
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: corFase)
+                      _estaDescansando
+                          ? 'Modo Descanso'
+                          : 'Série $_serieAtual de $_totalSeries',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: corFase,
+                      ),
                     ),
                   ),
                   Text(
-                    _tempoFormatado, 
-                    style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)
+                    _tempoFormatado,
+                    style: TextStyle(
+                      fontSize: 80,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        widget.treino['instrucoes'] ?? 'Mantenha a postura correta...',
+                        widget.treino['instrucoes'] ??
+                            'Mantenha a postura correta...',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Theme.of(context).hintColor),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).hintColor,
+                        ),
                       ),
                     ),
                   ),
@@ -188,21 +262,32 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        onPressed: _avancarFase, 
-                        icon: const Icon(Icons.skip_next, size: 40), 
-                        color: Colors.grey
+                        onPressed: _avancarFase,
+                        icon: const Icon(Icons.skip_next, size: 40),
+                        color: Colors.grey,
                       ),
                       GestureDetector(
                         onTap: _iniciarOuPausarTimer,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
-                          width: 80, height: 80,
+                          width: 80,
+                          height: 80,
                           decoration: BoxDecoration(
-                            color: corFase, 
-                            shape: BoxShape.circle, 
-                            boxShadow: [BoxShadow(color: corFase.withValues(alpha: 0.4), blurRadius: 15, spreadRadius: 2)]
+                            color: corFase,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: corFase.withValues(alpha: 0.4),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              ),
+                            ],
                           ),
-                          child: Icon(_estaRodando ? Icons.pause : Icons.play_arrow, size: 40, color: Colors.white),
+                          child: Icon(
+                            _estaRodando ? Icons.pause : Icons.play_arrow,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                       IconButton(
@@ -210,7 +295,9 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                           _timer?.cancel();
                           setState(() {
                             _estaRodando = false;
-                            _tempoRestante = _estaDescansando ? _tempoDescanso : _tempoExercicio;
+                            _tempoRestante = _estaDescansando
+                                ? _tempoDescanso
+                                : _tempoExercicio;
                           });
                         },
                         icon: const Icon(Icons.refresh, size: 40),
