@@ -1,5 +1,8 @@
+import 'dart:math'; // Importante para calcular a maior distância dinâmica do gráfico
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+
 import '../controller/home_controller.dart';
 import 'camera_motion_detector.dart';
 
@@ -202,6 +205,145 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
+  // WIDGET DO GRÁFICO SEMANAL
+  Widget _buildGraficoSemanal(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final corDestaque = Theme.of(context).colorScheme.primary;
+
+    // Captura a lista de distâncias calculadas pelo controller
+    final dadosSemana = widget.controller.distanciasSemana;
+
+    // Calcula automaticamente o teto ideal do gráfico baseado na maior corrida realizada
+    double maiorDistancia = dadosSemana.isNotEmpty
+        ? dadosSemana.reduce(max)
+        : 0.0;
+    double tetoGrafico = maiorDistancia > 4.0 ? maiorDistancia + 2.0 : 6.0;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Progresso Semanal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              Icon(Icons.directions_run, color: corDestaque),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Quilômetros percorridos nesta semana',
+            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+          ),
+          const SizedBox(height: 30),
+          SizedBox(
+            height: 180,
+            child: BarChart(
+              BarChartData(
+                alignment: BarChartAlignment.spaceAround,
+                maxY: tetoGrafico,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipColor: (_) => Colors.black87,
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      return BarTooltipItem(
+                        '${rod.toY.toStringAsFixed(1)} km',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        // Ordem iniciada no Domingo (0) para alinhar com o mapeamento index % 7
+                        const dias = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+
+                        // Verifica se a barra sendo renderizada corresponde ao dia de hoje
+                        bool isHoje =
+                            (DateTime.now().weekday % 7) == value.toInt();
+
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            dias[value.toInt()],
+                            style: TextStyle(
+                              color: isHoje ? corDestaque : Colors.grey,
+                              fontWeight: isHoje
+                                  ? FontWeight.w900
+                                  : FontWeight.bold,
+                              fontSize: isHoje ? 14 : 12,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barGroups: List.generate(7, (index) {
+                  return BarChartGroupData(
+                    x: index,
+                    barRods: [
+                      BarChartRodData(
+                        toY: dadosSemana[index],
+                        color: corDestaque,
+                        width: 16,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: tetoGrafico,
+                          color: corDestaque.withValues(alpha: 0.1),
+                        ),
+                      ),
+                    ],
+                  );
+                }),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
@@ -221,7 +363,7 @@ class _HomeViewState extends State<HomeView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // CABEÇALHO
+                  // CABEÇALHO ATUALIZADO COM A FOTO REAL DO PERFIL
                   MergeSemantics(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -254,16 +396,30 @@ class _HomeViewState extends State<HomeView> {
                           ),
                         ),
                         ExcludeSemantics(
-                          child: CircleAvatar(
-                            radius: 28,
-                            backgroundColor: corDestaque.withValues(
-                              alpha: 0.15,
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: corDestaque.withValues(alpha: 0.15),
+                              border: Border.all(color: corDestaque, width: 2),
+                              // Exibe a imagem salva localmente caso ela exista
+                              image: widget.controller.imagemDoPerfil != null
+                                  ? DecorationImage(
+                                      image: FileImage(
+                                        widget.controller.imagemDoPerfil!,
+                                      ),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
                             ),
-                            child: Icon(
-                              Icons.person,
-                              size: 30,
-                              color: corDestaque,
-                            ),
+                            child: widget.controller.imagemDoPerfil == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 30,
+                                    color: corDestaque,
+                                  )
+                                : null,
                           ),
                         ),
                       ],
@@ -362,7 +518,6 @@ class _HomeViewState extends State<HomeView> {
                                 ),
                               ),
                             ),
-
                             Semantics(
                               button: true,
                               label: 'Editar tempo de inatividade',
@@ -409,7 +564,6 @@ class _HomeViewState extends State<HomeView> {
                             ),
                           ],
                         ),
-
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
                           child: Center(
@@ -428,7 +582,6 @@ class _HomeViewState extends State<HomeView> {
                             ),
                           ),
                         ),
-
                         Row(
                           children: [
                             Expanded(
@@ -476,7 +629,6 @@ class _HomeViewState extends State<HomeView> {
                               ),
                             ),
                             const SizedBox(width: 12),
-
                             Semantics(
                               label: 'Zerar cronômetro',
                               child: OutlinedButton(
@@ -515,6 +667,11 @@ class _HomeViewState extends State<HomeView> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 35),
+
+                  // GRÁFICO DINÂMICO RENDERIZADO NA TELA
+                  _buildGraficoSemanal(context),
+
                   const SizedBox(height: 24),
                 ],
               ),

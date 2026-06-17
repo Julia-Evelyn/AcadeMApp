@@ -1,5 +1,6 @@
 import 'dart:async';
-
+import 'dart:io';
+import 'package:academyapp/core/database_helper.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/services/audio/alarm_audio_service.dart';
@@ -18,6 +19,11 @@ class HomeController extends ChangeNotifier {
   final AlarmAudioService _alarmAudioService;
 
   String nomeUsuario = 'Atleta';
+  File? imagemDoPerfil;
+
+  // Lista com 7 posições (Domingo = 0, Segunda = 1 ... Sábado = 6)
+  List<double> distanciasSemana = List.filled(7, 0.0);
+
   Timer? _timer;
   int minutosEscolhidos = AppPreferencesService.defaultAlertMinutes;
   int tempoRestanteSegundos = AppPreferencesService.defaultAlertMinutes * 60;
@@ -27,6 +33,8 @@ class HomeController extends ChangeNotifier {
 
   Future<void> carregarDadosIniciais() async {
     await carregarNomeUsuario();
+    await carregarFotoPerfil();
+    await carregarProgressoSemanal();
     minutosEscolhidos = await _preferencesService.loadAlertMinutes();
     tempoRestanteSegundos = minutosEscolhidos * 60;
     notifyListeners();
@@ -34,6 +42,53 @@ class HomeController extends ChangeNotifier {
 
   Future<void> carregarNomeUsuario() async {
     nomeUsuario = await _preferencesService.loadProfileDisplayName();
+    notifyListeners();
+  }
+
+  Future<void> carregarFotoPerfil() async {
+    final perfil = await _preferencesService.loadPerfilData();
+    if (perfil.caminhoImagem != null && perfil.caminhoImagem!.isNotEmpty) {
+      imagemDoPerfil = File(perfil.caminhoImagem!);
+      notifyListeners();
+    }
+  }
+
+  // Lógica Matemática do Gráfico
+  Future<void> carregarProgressoSemanal() async {
+    final dbHelper = DatabaseHelper();
+    final atividades = await dbHelper.buscarTodasAtividades();
+
+    List<double> semana = List.filled(7, 0.0);
+    final agora = DateTime.now();
+
+    // Volta os dias até encontrar o Domingo desta semana (meia-noite)
+    final inicioDaSemana = agora.subtract(Duration(days: agora.weekday % 7));
+    final inicioDaSemanaLimpo = DateTime(
+      inicioDaSemana.year,
+      inicioDaSemana.month,
+      inicioDaSemana.day,
+    );
+
+    for (var item in atividades) {
+      final dataStr = item['data_hora'] as String;
+      final distancia = (item['distancia_km'] as num).toDouble();
+
+      try {
+        final dataFormatada = DateTime.parse(dataStr);
+
+        // Verifica se a corrida aconteceu nesta semana
+        if (dataFormatada.isAfter(inicioDaSemanaLimpo) ||
+            dataFormatada.isAtSameMomentAs(inicioDaSemanaLimpo)) {
+          // No Dart, Segunda=1 e Domingo=7. Usamos % 7 para o Domingo virar 0.
+          int diaIndex = dataFormatada.weekday % 7;
+          semana[diaIndex] += distancia;
+        }
+      } catch (e) {
+        debugPrint('Erro ao ler data da atividade: $e');
+      }
+    }
+
+    distanciasSemana = semana;
     notifyListeners();
   }
 

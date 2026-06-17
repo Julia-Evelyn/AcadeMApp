@@ -42,6 +42,8 @@ Future<void> main() async {
           ChangeNotifierProvider(
             create: (context) => TreinoProvider(FirebaseDatabaseService()),
           ),
+
+          ChangeNotifierProvider.value(value: themeController),
         ],
         child: MyApp(
           themeController: themeController,
@@ -51,7 +53,7 @@ Future<void> main() async {
       ),
     );
   } catch (e, stackTrace) {
-    debugPrint('🚨 ERRO FATAL DETECTADO: $e');
+    debugPrint('ERRO FATAL DETECTADO: $e');
     debugPrint('$stackTrace');
   }
 }

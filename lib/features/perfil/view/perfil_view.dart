@@ -1,6 +1,11 @@
+import 'package:academyapp/core/theme/theme_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
 import '../../auth/view/login_view.dart';
+import '../../configuracoes/view/configuracoes_view.dart';
+
 import '../controller/perfil_controller.dart';
 
 class PerfilView extends StatelessWidget {
@@ -23,7 +28,6 @@ class PerfilView extends StatelessWidget {
                 : Colors.white,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
           ),
-          // ACESSIBILIDADE/RESPONSIVIDADE: O SafeArea impede que menus cubram áreas sensíveis da tela
           child: SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -112,7 +116,6 @@ class PerfilView extends StatelessWidget {
             backgroundColor: Colors.transparent,
             elevation: 0,
             actions: [
-              // ACESSIBILIDADE: Envelopamos o botão com a ação exata para o TalkBack
               Semantics(
                 label: controller.estaEditando
                     ? 'Salvar perfil'
@@ -144,7 +147,6 @@ class PerfilView extends StatelessWidget {
                 Center(
                   child: Stack(
                     children: [
-                      // ACESSIBILIDADE: Marcamos a foto como imagem para o leitor narrar
                       Semantics(
                         image: true,
                         label: 'Foto de Perfil',
@@ -172,7 +174,6 @@ class PerfilView extends StatelessWidget {
                       Positioned(
                         bottom: 0,
                         right: 0,
-                        // ACESSIBILIDADE: Envelopamos o botão flutuante da câmera
                         child: Semantics(
                           button: true,
                           label: 'Alterar foto de perfil',
@@ -276,7 +277,6 @@ class PerfilView extends StatelessWidget {
                   if (controller.pesoFormatado.isNotEmpty ||
                       controller.alturaFormatada.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    // RESPONSIVIDADE: Este Wrap aqui é seguro, pois só guarda os "chips" de texto.
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 12,
@@ -414,12 +414,22 @@ class PerfilView extends StatelessWidget {
                     isDark,
                     onTap: () {},
                   ),
+                  // BOTÃO DE CONFIGURAÇÕES COM O CONTROLLER INJETADO:
                   _construirOpcaoMenu(
                     context,
                     Icons.settings,
                     'Configurações',
                     isDark,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ConfiguracoesView(
+                            themeController: context.read<ThemeController>(),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   if (isLoggedIn)
                     _construirOpcaoMenu(
@@ -449,7 +459,6 @@ class PerfilView extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
-      // ACESSIBILIDADE: Semantics no TextField
       child: Semantics(
         textField: true,
         label: 'Campo de texto para digitar $label',
@@ -478,7 +487,7 @@ class PerfilView extends StatelessWidget {
     );
   }
 
-  // Componente visual para exibir as pílulas de peso e altura (Adicionado label de Semantics)
+  // Componente visual para exibir as pílulas de peso e altura
   Widget _construirChipInfo(
     BuildContext context,
     IconData icone,
@@ -515,7 +524,6 @@ class PerfilView extends StatelessWidget {
   }
 
   Widget _construirColunaEstatistica(String titulo, String valor, bool isDark) {
-    // ACESSIBILIDADE: MergeSemantics junta a leitura! "0 Corridas" em vez de ler "0" e depois ler "Corridas".
     return MergeSemantics(
       child: Semantics(
         label: '$valor $titulo',
@@ -566,7 +574,6 @@ class PerfilView extends StatelessWidget {
           ),
         ],
       ),
-      // ACESSIBILIDADE: (ExcludeSemantics)
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         leading: Container(
