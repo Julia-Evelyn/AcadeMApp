@@ -21,7 +21,6 @@ class HomeController extends ChangeNotifier {
   String nomeUsuario = 'Atleta';
   File? imagemDoPerfil;
 
-  // Lista com 7 posições (Domingo = 0, Segunda = 1 ... Sábado = 6)
   List<double> distanciasSemana = List.filled(7, 0.0);
 
   Timer? _timer;
@@ -48,12 +47,16 @@ class HomeController extends ChangeNotifier {
   Future<void> carregarFotoPerfil() async {
     final perfil = await _preferencesService.loadPerfilData();
     if (perfil.caminhoImagem != null && perfil.caminhoImagem!.isNotEmpty) {
-      imagemDoPerfil = File(perfil.caminhoImagem!);
+      final file = File(perfil.caminhoImagem!);
+      if (file.existsSync()) {
+        imagemDoPerfil = file;
+      } else {
+        imagemDoPerfil = null;
+      }
       notifyListeners();
     }
   }
 
-  // Lógica Matemática do Gráfico
   Future<void> carregarProgressoSemanal() async {
     final dbHelper = DatabaseHelper();
     final atividades = await dbHelper.buscarTodasAtividades();
@@ -61,7 +64,6 @@ class HomeController extends ChangeNotifier {
     List<double> semana = List.filled(7, 0.0);
     final agora = DateTime.now();
 
-    // Volta os dias até encontrar o Domingo desta semana (meia-noite)
     final inicioDaSemana = agora.subtract(Duration(days: agora.weekday % 7));
     final inicioDaSemanaLimpo = DateTime(
       inicioDaSemana.year,
@@ -76,10 +78,8 @@ class HomeController extends ChangeNotifier {
       try {
         final dataFormatada = DateTime.parse(dataStr);
 
-        // Verifica se a corrida aconteceu nesta semana
         if (dataFormatada.isAfter(inicioDaSemanaLimpo) ||
             dataFormatada.isAtSameMomentAs(inicioDaSemanaLimpo)) {
-          // No Dart, Segunda=1 e Domingo=7. Usamos % 7 para o Domingo virar 0.
           int diaIndex = dataFormatada.weekday % 7;
           semana[diaIndex] += distancia;
         }

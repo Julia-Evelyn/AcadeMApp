@@ -20,13 +20,17 @@ Future<void> main() async {
 
   try {
     final preferencesStore = await SharedPreferencesStore.create();
-    final preferencesService = AppPreferencesService(preferencesStore);
 
     await FirebaseBootstrapService().initialize(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-
     await Firebase.initializeApp();
+
+    final dbService = FirebaseDatabaseService();
+    final preferencesService = AppPreferencesService(
+      preferencesStore,
+      dbService,
+    );
 
     final themeController = ThemeController(
       preferencesService: preferencesService,
@@ -40,10 +44,8 @@ Future<void> main() async {
       MultiProvider(
         providers: [
           ChangeNotifierProvider(
-            create: (context) => TreinoProvider(FirebaseDatabaseService()),
+            create: (context) => TreinoProvider(dbService),
           ),
-
-          ChangeNotifierProvider.value(value: themeController),
         ],
         child: MyApp(
           themeController: themeController,

@@ -1,12 +1,13 @@
-import 'treino_ativo_view.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../controller/treino_provider.dart';
+import 'treino_ativo_view.dart';
+import 'criar_treino_view.dart';
+import 'detalhes_treino_personalizado_view.dart';
 
 class TreinosView extends StatelessWidget {
   const TreinosView({super.key});
 
-  // Função para evitar que o usuário apague um treino sem querer!
   void _mostrarConfirmacaoExclusao(
     BuildContext context,
     TreinoProvider provider,
@@ -60,7 +61,7 @@ class TreinosView extends StatelessWidget {
           if (treinoProvider.meusTreinos.isEmpty) {
             return const Center(
               child: Text(
-                'Nenhum treino salvo.\nVá na aba Buscar para adicionar!',
+                'Nenhum treino salvo.\nClique no botão + abaixo ou vá na aba Buscar!',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
@@ -72,7 +73,6 @@ class TreinosView extends StatelessWidget {
             itemCount: treinoProvider.meusTreinos.length,
             itemBuilder: (context, index) {
               final treinoSalvo = treinoProvider.meusTreinos[index];
-
               final String? treinoId = treinoSalvo['id'];
 
               return Card(
@@ -80,15 +80,25 @@ class TreinosView extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(16),
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            TreinoAtivoView(treino: treinoSalvo),
-                      ),
-                    );
+                    if (treinoSalvo['objetivo'] == 'Personalizado') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DetalhesTreinoPersonalizadoView(
+                            treino: treinoSalvo,
+                          ),
+                        ),
+                      );
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              TreinoAtivoView(treino: treinoSalvo),
+                        ),
+                      );
+                    }
                   },
-                  // ACESSIBILIDADE: Agrupa as informações para o TalkBack narrar de uma vez só
                   child: MergeSemantics(
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(12),
@@ -115,7 +125,6 @@ class TreinosView extends StatelessWidget {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // BOTÃO DE EXCLUIR O TREINO
                           Semantics(
                             label: 'Remover treino',
                             button: true,
@@ -135,7 +144,7 @@ class TreinosView extends StatelessWidget {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
                                       content: Text(
-                                        'Erro: Não foi possível identificar o treino para exclusão.',
+                                        'Erro: Não foi possível identificar o treino.',
                                       ),
                                     ),
                                   );
@@ -144,7 +153,6 @@ class TreinosView extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(width: 4),
-
                           ExcludeSemantics(
                             child: Icon(
                               Icons.play_circle_fill,
@@ -161,6 +169,17 @@ class TreinosView extends StatelessWidget {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CriarTreinoView()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
