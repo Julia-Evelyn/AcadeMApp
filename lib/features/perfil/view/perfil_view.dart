@@ -1,7 +1,7 @@
 import 'package:academyapp/features/auth/view/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-
+import 'historico_corridas_view.dart';
 import '../controller/perfil_controller.dart';
 
 class PerfilView extends StatelessWidget {
@@ -399,7 +399,14 @@ class PerfilView extends StatelessWidget {
                     Icons.history,
                     'Histórico de Corridas',
                     isDark,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HistoricoCorridasView(),
+                        ),
+                      );
+                    },
                   ),
                   _construirOpcaoMenu(
                     context,
