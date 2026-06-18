@@ -12,9 +12,9 @@ class TreinoAtivoView extends StatefulWidget {
 }
 
 class _TreinoAtivoViewState extends State<TreinoAtivoView> {
-  final int _tempoExercicio = 30;
-  final int _tempoDescanso = 15;
-  final int _totalSeries = 3;
+  late int _tempoExercicio;
+  late int _tempoDescanso;
+  late int _totalSeries;
 
   int _serieAtual = 1;
   bool _estaDescansando = false;
@@ -27,6 +27,10 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
   @override
   void initState() {
     super.initState();
+    _tempoExercicio = widget.treino['duracao'] ?? 30;
+    _tempoDescanso = widget.treino['descanso'] ?? 15;
+    _totalSeries = widget.treino['series'] ?? 3;
+
     _tempoRestante = _tempoExercicio;
   }
 
@@ -39,7 +43,6 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
 
   Future<void> _tocarApito() async {
     _audioPlayer.setReleaseMode(ReleaseMode.stop);
-    // Tenta tocar o áudio. Se não tiver o arquivo MP3 na pasta assets/audio, ele ignora silenciosamente.
     try {
       await _audioPlayer.play(AssetSource('audio/alarme.mp3'));
       Future.delayed(const Duration(seconds: 2), () => _audioPlayer.stop());
@@ -103,11 +106,22 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               onPressed: () {
-                Navigator.pop(context); // Fecha o Dialog
-                Navigator.pop(context); // Volta pra tela de listagem
+                Navigator.pop(context);
+                Navigator.pop(context);
               },
-              child: const Text('Concluir'),
+              child: const Text(
+                'Concluir',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
             ),
           ),
         ],
@@ -121,100 +135,81 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
     return '${minutos.toString().padLeft(2, '0')}:${segundos.toString().padLeft(2, '0')}';
   }
 
+  IconData _obterIconeDinamico(String objetivo) {
+    if (_estaDescansando) return Icons.timer;
+
+    final obj = objetivo.toLowerCase();
+    if (obj.contains('braços') || obj.contains('ombros')) {
+      return Icons.sports_gymnastics;
+    }
+    if (obj.contains('pernas') || obj.contains('quadríceps')) {
+      return Icons.directions_walk;
+    }
+    if (obj.contains('peito') || obj.contains('costas')) {
+      return Icons.accessibility_new;
+    }
+    if (obj.contains('abdominais')) return Icons.airline_seat_flat;
+    return Icons.fitness_center;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final corFase = _estaDescansando
-        ? Colors.teal
-        : Theme.of(context).primaryColor;
+    final tema = Theme.of(context);
+    final isDark = tema.brightness == Brightness.dark;
+    final corDestaque = tema.colorScheme.primary;
+    final corFase = _estaDescansando ? Colors.teal : corDestaque;
+
+    final String objetivoTreino = widget.treino['objetivo'] ?? '';
+    final IconData iconeTreino = _obterIconeDinamico(objetivoTreino);
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.treino['nome'] ?? 'Exercício')),
+      backgroundColor: isDark
+          ? tema.colorScheme.surfaceContainerHighest
+          : Colors.white,
+      appBar: AppBar(
+        title: Text(
+          widget.treino['nome'] ?? 'Exercício',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
       body: Column(
         children: [
-          Container(
+          SizedBox(
             width: double.infinity,
             height: 250,
-            color: Colors.white,
-            child: Builder(
-              builder: (context) {
-                final url = widget.treino['gifUrl']?.toString() ?? '';
-
-                // Se o banco de dados não tiver a URL, já desenhamos o placeholder direto
-                if (url.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.fitness_center,
-                          size: 60,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 10),
-                        Text(
-                          'Sem demonstração',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return Image.network(
-                  url.replaceAll('http://', 'https://'),
-                  fit: BoxFit.contain,
-                  headers: const {
-                    'User-Agent':
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept':
-                        'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-                  },
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(child: CircularProgressIndicator());
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.broken_image,
-                            size: 50,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'Erro ao carregar GIF',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: corFase.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(iconeTreino, size: 80, color: corFase),
+              ),
             ),
           ),
+
           Expanded(
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
+                color: tema.scaffoldBackgroundColor,
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(30),
+                  top: Radius.circular(40),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 10,
+                    blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
                 ],
               ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -222,7 +217,7 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: corFase.withValues(alpha: 0.2),
+                      color: corFase.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -230,30 +225,35 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                           ? 'Modo Descanso'
                           : 'Série $_serieAtual de $_totalSeries',
                       style: TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: corFase,
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
                   Text(
                     _tempoFormatado,
                     style: TextStyle(
                       fontSize: 80,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      fontWeight: FontWeight.w900,
+                      color: _tempoRestante == 0
+                          ? Colors.redAccent
+                          : tema.textTheme.bodyLarge?.color,
+                      letterSpacing: 2,
                     ),
                   ),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
                         widget.treino['instrucoes'] ??
-                            'Mantenha a postura correta...',
+                            'Mantenha a postura correta e respire de forma controlada.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
-                          color: Theme.of(context).hintColor,
+                          color: isDark ? Colors.grey[400] : Colors.grey[700],
+                          height: 1.5,
                         ),
                       ),
                     ),
@@ -262,8 +262,16 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        onPressed: _avancarFase,
-                        icon: const Icon(Icons.skip_next, size: 40),
+                        onPressed: () {
+                          _timer?.cancel();
+                          setState(() {
+                            _estaRodando = false;
+                            _tempoRestante = _estaDescansando
+                                ? _tempoDescanso
+                                : _tempoExercicio;
+                          });
+                        },
+                        icon: const Icon(Icons.refresh, size: 36),
                         color: Colors.grey,
                       ),
                       GestureDetector(
@@ -280,6 +288,7 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                                 color: corFase.withValues(alpha: 0.4),
                                 blurRadius: 15,
                                 spreadRadius: 2,
+                                offset: const Offset(0, 5),
                               ),
                             ],
                           ),
@@ -291,16 +300,8 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          _timer?.cancel();
-                          setState(() {
-                            _estaRodando = false;
-                            _tempoRestante = _estaDescansando
-                                ? _tempoDescanso
-                                : _tempoExercicio;
-                          });
-                        },
-                        icon: const Icon(Icons.refresh, size: 40),
+                        onPressed: _avancarFase,
+                        icon: const Icon(Icons.skip_next, size: 36),
                         color: Colors.grey,
                       ),
                     ],

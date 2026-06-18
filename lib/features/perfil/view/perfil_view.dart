@@ -1,6 +1,7 @@
 import 'package:academyapp/features/auth/view/login_view.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Importação adicionada para a limpeza!
 import 'historico_corridas_view.dart';
 import '../controller/perfil_controller.dart';
 
@@ -415,15 +416,32 @@ class PerfilView extends StatelessWidget {
                     isDark,
                     onTap: () => Navigator.pushNamed(context, '/configuracoes'),
                   ),
-                  if (isLoggedIn)
-                    _construirOpcaoMenu(
-                      context,
-                      Icons.logout,
-                      'Sair da Conta',
-                      isDark,
-                      isDestructive: true,
-                      onTap: controller.deslogar,
-                    ),
+                  _construirOpcaoMenu(
+                    context,
+                    Icons.logout,
+                    isLoggedIn ? 'Sair da Conta' : 'Sair do Modo Visitante',
+                    isDark,
+                    isDestructive: true,
+                    onTap: () async {
+                      if (isLoggedIn) {
+                        try {
+                          await controller.deslogar();
+                        } catch (e) {
+                          debugPrint('Erro ao deslogar da nuvem: $e');
+                        }
+                      }
+
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear();
+
+                      if (context.mounted) {
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/auth_selection',
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
                 ],
               ],
             ),

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/firebase_database_service.dart';
 import '../../../features/perfil/model/perfil_data.dart';
 import 'key_value_store.dart';
 
 class AppPreferencesService {
-  AppPreferencesService(this._store, this._dbService);
+  // Tornamos o dbService opcional para não quebrar o seu arquivo de testes antigos!
+  AppPreferencesService(this._store, [FirebaseDatabaseService? dbService])
+      : _dbService = dbService ?? FirebaseDatabaseService();
 
   static const int defaultAlertMinutes = 30;
   static const int defaultAccentColorValue = 0xFF2196F3;
@@ -18,9 +21,19 @@ class AppPreferencesService {
   static const String _profileWeightKey = 'perfil_peso';
   static const String _profileHeightKey = 'perfil_altura';
   static const String _profileImagePathKey = 'perfil_imagem_caminho';
+  static const String _fontDyslexiaKey = 'usar_fonte_dislexia';
 
   final KeyValueStore _store;
   final FirebaseDatabaseService _dbService;
+
+  Future<bool> loadUsarFonteDislexia() async {
+    final value = await _store.getString(_fontDyslexiaKey);
+    return value == 'true';
+  }
+
+  Future<void> saveUsarFonteDislexia(bool value) async {
+    await _store.setString(_fontDyslexiaKey, value.toString());
+  }
 
   Future<ThemeMode> loadThemeMode() async {
     final savedThemeMode = await _store.getString(_themeModeKey);
@@ -73,6 +86,14 @@ class AppPreferencesService {
         if (dados['caminhoImagem'] != null) {
           await _store.setString(_profileImagePathKey, dados['caminhoImagem']);
         }
+      }
+
+      final corridasRemotas = await _dbService.buscarDados('usuarios_corridas/${user.uid}');
+      if (corridasRemotas.isNotEmpty) {
+        List<String> historicoCorridas = corridasRemotas.map((c) => c['texto'].toString()).toList();
+        // Usamos o SharedPreferences direto aqui para garantir compatibilidade
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setStringList('historico_corridas', historicoCorridas);
       }
     } catch (e) {
       debugPrint('Erro na sincronizacao: $e');

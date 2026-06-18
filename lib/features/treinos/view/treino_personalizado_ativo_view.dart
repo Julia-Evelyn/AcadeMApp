@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class TreinoPersonalizadoAtivoView extends StatefulWidget {
   final Map<String, dynamic> treino;
@@ -18,6 +19,8 @@ class _TreinoPersonalizadoAtivoViewState
   bool _rodando = false;
   Timer? _timer;
 
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   @override
   void initState() {
     super.initState();
@@ -30,7 +33,18 @@ class _TreinoPersonalizadoAtivoViewState
   @override
   void dispose() {
     _timer?.cancel();
+    _audioPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _tocarApito() async {
+    _audioPlayer.setReleaseMode(ReleaseMode.stop);
+    try {
+      await _audioPlayer.play(AssetSource('audio/alarme.mp3'));
+      Future.delayed(const Duration(seconds: 2), () => _audioPlayer.stop());
+    } catch (e) {
+      debugPrint('Áudio não encontrado ou erro ao tocar: $e');
+    }
   }
 
   void _iniciarPausarTimer() {
@@ -44,6 +58,7 @@ class _TreinoPersonalizadoAtivoViewState
           setState(() => _tempoRestante--);
         } else {
           _iniciarPausarTimer();
+          _tocarApito(); // Toca o apito padronizado ao fim do tempo
           _avancar();
         }
       });
@@ -80,25 +95,30 @@ class _TreinoPersonalizadoAtivoViewState
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text(
-          'Parabéns!',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Center(child: Text('🎉 Parabéns!')),
         content: const Text(
-          'Você concluiu todo o seu treino personalizado.',
+          'Você concluiu todo o seu treino personalizado com sucesso!',
+          textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16),
         ),
         actions: [
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+              child: const Text('Finalizar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('Finalizar'),
           ),
         ],
       ),
@@ -117,105 +137,165 @@ class _TreinoPersonalizadoAtivoViewState
       return Scaffold(appBar: AppBar(title: const Text('Treino Vazio')));
     }
 
+    final tema = Theme.of(context);
+    final isDark = tema.brightness == Brightness.dark;
+    final corDestaque = tema.colorScheme.primary;
+
     final exercicioAtual = _exercicios[_currentIndex];
     final bool isDescanso = exercicioAtual['isDescanso'] ?? false;
-    final corDestaque = Theme.of(context).colorScheme.primary;
+    final corFase = isDescanso ? Colors.teal : corDestaque;
 
     return Scaffold(
+      backgroundColor: isDark ? tema.colorScheme.surfaceContainerHighest : Colors.white,
       appBar: AppBar(
-        title: Text(
-          widget.treino['nome'] ?? 'Treino Ativo',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(widget.treino['nome'] ?? 'Treino Ativo', style: const TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Etapa ${_currentIndex + 1} de ${_exercicios.length}',
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 40),
-            Icon(
-              isDescanso ? Icons.timer : Icons.fitness_center,
-              size: 100,
-              color: isDescanso ? Colors.blueGrey : corDestaque,
-            ),
-            const SizedBox(height: 30),
-            Text(
-              exercicioAtual['nome'] ?? '',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            if (!isDescanso)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: corDestaque.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${exercicioAtual['series']} Séries x ${exercicioAtual['repeticoes']} Repetições',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: corDestaque,
+      body: Column(
+        children: [
+          // 1. ÁREA SUPERIOR (MÍDIA / ÍCONE GIGANTE)
+          SizedBox(
+            width: double.infinity,
+            height: 250,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: corFase.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isDescanso ? Icons.timer : Icons.fitness_center,
+                      size: 80,
+                      color: corFase,
+                    ),
                   ),
-                ),
-              ),
-            const Spacer(),
-            Text(
-              _formatarTempo(_tempoRestante),
-              style: TextStyle(
-                fontSize: 80,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-                color: _tempoRestante == 0
-                    ? Colors.red
-                    : Theme.of(context).textTheme.bodyLarge?.color,
+                ],
               ),
             ),
-            const Spacer(),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  iconSize: 40,
-                  color: Colors.grey,
-                  icon: const Icon(Icons.skip_previous),
-                  onPressed: _currentIndex > 0 ? _voltar : null,
-                ),
-                FloatingActionButton.large(
-                  backgroundColor: corDestaque,
-                  foregroundColor: Colors.white,
-                  onPressed: _iniciarPausarTimer,
-                  elevation: _rodando ? 2 : 6,
-                  child: Icon(
-                    _rodando ? Icons.pause : Icons.play_arrow,
-                    size: 48,
+          ),
+
+          // 2. PAINEL INFERIOR (CONTROLES E TIMER) - IDÊNTICO À API
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(30),
+              decoration: BoxDecoration(
+                color: tema.scaffoldBackgroundColor,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
                   ),
-                ),
-                IconButton(
-                  iconSize: 40,
-                  color: Colors.grey,
-                  icon: const Icon(Icons.skip_next),
-                  onPressed: _avancar,
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: corFase.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      'Etapa ${_currentIndex + 1} de ${_exercicios.length}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: corFase,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    _formatarTempo(_tempoRestante),
+                    style: TextStyle(
+                      fontSize: 80,
+                      fontWeight: FontWeight.w900,
+                      color: _tempoRestante == 0 ? Colors.redAccent : tema.textTheme.bodyLarge?.color,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Column(
+                        children: [
+                          Text(
+                            exercicioAtual['nome'] ?? (isDescanso ? 'Descanso' : 'Exercício'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          if (!isDescanso) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '${exercicioAtual['series']} Séries x ${exercicioAtual['repeticoes']} Repetições',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isDark ? Colors.grey[400] : Colors.grey[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      IconButton(
+                        onPressed: _currentIndex > 0 ? _voltar : null,
+                        icon: const Icon(Icons.skip_previous, size: 36),
+                        color: _currentIndex > 0 ? Colors.grey : Colors.grey.withValues(alpha: 0.3),
+                      ),
+                      GestureDetector(
+                        onTap: _iniciarPausarTimer,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: corFase,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: corFase.withValues(alpha: 0.4),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            _rodando ? Icons.pause : Icons.play_arrow,
+                            size: 40,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _avancar,
+                        icon: const Icon(Icons.skip_next, size: 36),
+                        color: Colors.grey,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -1,18 +1,24 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
-import 'package:flutter/foundation.dart'; // Para kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../controller/home_controller.dart';
 
 class CameraMotionDetector extends StatefulWidget {
-  const CameraMotionDetector({super.key, required this.controller});
+  const CameraMotionDetector({
+    super.key,
+    required this.controller,
+    this.onMotionChanged,
+    this.isFullscreen = false, 
+  });
 
   final HomeController controller;
+  final ValueChanged<bool>? onMotionChanged;
+  final bool isFullscreen;
 
   @override
   State<CameraMotionDetector> createState() => _CameraMotionDetectorState();
@@ -24,7 +30,7 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
   bool _permissionDenied = false;
   bool _cameraAvailable = false;
   bool _isMoving = false;
-  double? _previousLuminosity; // <- Double agora para maior precisão
+  double? _previousLuminosity;
   int _movingFrameCount = 0;
   int _stillFrameCount = 0;
 
@@ -41,14 +47,15 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
   }
 
   Future<void> _initializeCamera() async {
-    // Na web, permission_handler não funciona — câmera pede permissão automaticamente
     if (!kIsWeb) {
       final permission = await Permission.camera.request();
       if (!permission.isGranted) {
-        setState(() {
-          _permissionDenied = true;
-          _isInitializing = false;
-        });
+        if (mounted) {
+          setState(() {
+            _permissionDenied = true;
+            _isInitializing = false;
+          });
+        }
         return;
       }
     }
@@ -56,10 +63,12 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
     try {
       final cameras = await availableCameras();
       if (cameras.isEmpty) {
-        setState(() {
-          _cameraAvailable = false;
-          _isInitializing = false;
-        });
+        if (mounted) {
+          setState(() {
+            _cameraAvailable = false;
+            _isInitializing = false;
+          });
+        }
         return;
       }
 
@@ -72,23 +81,26 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
         camera,
         ResolutionPreset.low,
         enableAudio: false,
-        // NÃO especificar imageFormatGroup na web — deixa o padrão da plataforma
         imageFormatGroup: kIsWeb ? null : ImageFormatGroup.yuv420,
       );
 
       await _cameraController?.initialize();
       await _cameraController?.startImageStream(_processCameraImage);
 
-      setState(() {
-        _cameraAvailable = true;
-        _isInitializing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _cameraAvailable = true;
+          _isInitializing = false;
+        });
+      }
     } catch (e) {
       debugPrint('Erro ao inicializar câmera: $e');
-      setState(() {
-        _cameraAvailable = false;
-        _isInitializing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _cameraAvailable = false;
+          _isInitializing = false;
+        });
+      }
     }
   }
 
@@ -104,19 +116,15 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
     double currentAvg;
 
     try {
-      // yuv420 / nv21 (Android/iOS): plano Y é luminância pura
-      // bgra8888 (Web/iOS fallback): precisa calcular luminância dos canais RGB
       if (image.format.group == ImageFormatGroup.yuv420 ||
           image.format.group == ImageFormatGroup.nv21) {
         currentAvg = _calcularLuminanciaYUV(image);
       } else if (image.format.group == ImageFormatGroup.bgra8888) {
         currentAvg = _calcularLuminanciaBGRA(image);
       } else {
-        // Formato desconhecido: tenta usar o primeiro plano mesmo assim
         currentAvg = _calcularLuminanciaGenerico(image.planes.first.bytes);
       }
     } catch (e) {
-      debugPrint('Erro ao processar frame: $e');
       return;
     }
 
@@ -130,8 +138,9 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
     final diffPercent = prev > 0 ? (diff / prev) * 100.0 : 0.0;
     _previousLuminosity = currentAvg;
 
-    const thresholdPercent = 6.0;
-    const requiredFrames = 2;
+
+    const thresholdPercent = 1.0; 
+    const requiredFrames = 1; 
 
     if (diffPercent >= thresholdPercent) {
       _movingFrameCount++;
@@ -151,44 +160,42 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
     if (moving != _isMoving) {
       _isMoving = moving;
       widget.controller.atualizarMovimentoCamera(moving);
+      widget.onMotionChanged?.call(moving);
       if (mounted) setState(() {});
     }
   }
 
-  // Plano Y do YUV420 — luminância direta, muito eficiente
+  double _calcularLuminanciaBGRA(CameraImage image) {
+    final bytes = image.planes[0].bytes;
+    if (bytes.isEmpty) return 0;
+    
+    final sampleStep = max(1, (bytes.length ~/ 4) ~/ 5000); 
+    double total = 0;
+    int samples = 0;
+    
+    for (var i = 0; i < bytes.length - 3; i += 4 * sampleStep) {
+      final b = bytes[i];
+      final g = bytes[i + 1];
+      final r = bytes[i + 2];
+      total += 0.114 * b + 0.587 * g + 0.299 * r;
+      samples++;
+    }
+    return samples > 0 ? total / samples : 0;
+  }
+
   double _calcularLuminanciaYUV(CameraImage image) {
     final bytes = image.planes[0].bytes;
     return _calcularLuminanciaGenerico(bytes);
   }
 
-  // BGRA8888 — cada pixel tem 4 bytes: B, G, R, A
-  // Luminância perceptual: 0.114*B + 0.587*G + 0.299*R
-  double _calcularLuminanciaBGRA(CameraImage image) {
-    final bytes = image.planes[0].bytes;
-    if (bytes.isEmpty) return 0;
-
-    final sampleStep = max(1, (bytes.length ~/ 4) ~/ 300); // ~300 pixels amostrados
-    double total = 0;
-    int samples = 0;
-
-    for (var i = 0; i < bytes.length - 3; i += 4 * sampleStep) {
-      final b = bytes[i];
-      final g = bytes[i + 1];
-      final r = bytes[i + 2];
-      // Ignora alpha (bytes[i + 3])
-      total += 0.114 * b + 0.587 * g + 0.299 * r;
-      samples++;
-    }
-
-    return samples > 0 ? total / samples : 0;
-  }
-
-  // Fallback genérico — amostragem simples do primeiro plano
   double _calcularLuminanciaGenerico(Uint8List bytes) {
     if (bytes.isEmpty) return 0;
-    final sampleStep = max(1, bytes.length ~/ 1200);
+    
+    // Mesma lógica de alta precisão
+    final sampleStep = max(1, bytes.length ~/ 5000); 
     int total = 0;
     int samples = 0;
+    
     for (var i = 0; i < bytes.length; i += sampleStep) {
       total += bytes[i];
       samples++;
@@ -198,21 +205,23 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
 
   Widget _buildPreview() {
     if (_isInitializing) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_permissionDenied) {
-      return _buildPermissionMessage();
-    }
-
-    if (!_cameraAvailable ||
-        _cameraController == null ||
-        !_cameraController!.value.isInitialized) {
-      return const Center(
-        child: Icon(Icons.videocam_off, size: 56, color: Colors.white70),
+      return Container(
+        color: Colors.black,
+        child: const Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
-
+    if (_permissionDenied) {
+      return Container(
+        color: Colors.black,
+        child: _buildPermissionMessage(),
+      );
+    }
+    if (!_cameraAvailable || _cameraController == null || !_cameraController!.value.isInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(child: Icon(Icons.videocam_off, size: 56, color: Colors.white70)),
+      );
+    }
     return CameraPreview(_cameraController!);
   }
 
@@ -239,7 +248,13 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
 
   @override
   Widget build(BuildContext context) {
-    // (build idêntico ao original — sem alterações)
+    if (widget.isFullscreen) {
+      return SizedBox.expand(
+        child: _buildPreview(),
+      );
+    }
+
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -259,8 +274,7 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ClipRRect(
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
             child: SizedBox(
               height: 200,
               width: double.infinity,
@@ -268,17 +282,12 @@ class _CameraMotionDetectorState extends State<CameraMotionDetector> {
             ),
           ),
           Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             child: Row(
               children: [
                 Icon(
-                  _isMoving
-                      ? Icons.motion_photos_on
-                      : Icons.motion_photos_paused,
-                  color: _isMoving
-                      ? Colors.greenAccent.shade700
-                      : Colors.orangeAccent.shade200,
+                  _isMoving ? Icons.motion_photos_on : Icons.motion_photos_paused,
+                  color: _isMoving ? Colors.greenAccent.shade700 : Colors.orangeAccent.shade200,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

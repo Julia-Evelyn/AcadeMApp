@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../services/preferences/app_preferences_service.dart';
 
 class ThemeController extends ChangeNotifier {
@@ -7,14 +6,17 @@ class ThemeController extends ChangeNotifier {
     required AppPreferencesService preferencesService,
     required ThemeMode initialThemeMode,
     required Color initialAccentColor,
+    required bool initialUsarFonteDislexia,
   }) : _preferencesService = preferencesService,
        themeMode = initialThemeMode,
-       corDestaque = initialAccentColor;
+       corDestaque = initialAccentColor,
+       usarFonteDislexia = initialUsarFonteDislexia;
 
   final AppPreferencesService _preferencesService;
 
   ThemeMode themeMode;
   Color corDestaque;
+  bool usarFonteDislexia;
 
   static const List<Color> coresDisponiveis = [
     Colors.red,
@@ -37,5 +39,11 @@ class ThemeController extends ChangeNotifier {
     themeMode = modo;
     notifyListeners();
     await _preferencesService.saveThemeMode(modo);
+  }
+
+  Future<void> alternarFonteDislexia(bool valor) async {
+    usarFonteDislexia = valor;
+    notifyListeners();
+    await _preferencesService.saveUsarFonteDislexia(valor);
   }
 }

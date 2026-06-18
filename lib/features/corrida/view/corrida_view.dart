@@ -5,6 +5,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../core/services/firebase_database_service.dart';
 
 class CorridaView extends StatefulWidget {
   const CorridaView({super.key});
@@ -23,7 +25,6 @@ class _CorridaViewState extends State<CorridaView> {
   StreamSubscription<Position>? _positionStream;
   final MapController _mapController = MapController();
 
-  // Coordenada inicial padrão apenas para renderizar o mapa antes do GPS fixar
   LatLng _posicaoAtual = const LatLng(-15.799, -47.860);
   final List<LatLng> _rotaPercorrida = [];
   bool _buscandoSatelite = true;
@@ -115,7 +116,6 @@ class _CorridaViewState extends State<CorridaView> {
       _segundosDecorridos = 0;
       _rotaPercorrida.clear();
 
-      // Só adiciona à rota se já tivermos certeza de que não é a posição genérica de Brasília
       if (_localizacaoRealFixada) {
         _rotaPercorrida.add(_posicaoAtual);
       }
@@ -133,12 +133,10 @@ class _CorridaViewState extends State<CorridaView> {
     _positionStream = Geolocator.getPositionStream(locationSettings: config).listen((
       Position novaPos,
     ) {
-      // FILTRO 1: Ignora precisões muito ruins (maiores que 35 metros) para evitar pular de uma antena para outra
       if (novaPos.accuracy > 35) return;
 
       LatLng novaLatLng = LatLng(novaPos.latitude, novaPos.longitude);
 
-      // Se a rota ainda estiver vazia, define este como o ponto de partida real
       if (_rotaPercorrida.isEmpty) {
         setState(() {
           _posicaoAtual = novaLatLng;
@@ -156,8 +154,6 @@ class _CorridaViewState extends State<CorridaView> {
         novaPos.longitude,
       );
 
-      // FILTRO 2: Ignora "teletransportes". Se a distância capturada em 2 metros de filtro
-      // for maior do que 50 metros instantâneos, é um salto de calibragem do satélite.
       if (distanciaPercorrida > 50.0) {
         setState(() {
           _posicaoAtual = novaLatLng;
@@ -185,10 +181,25 @@ class _CorridaViewState extends State<CorridaView> {
       final prefs = await SharedPreferences.getInstance();
       List<String> historico = prefs.getStringList('historico_corridas') ?? [];
 
-      String dataAtual =
-          "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
-      historico.add("$dataAtual - $_distanciaFormatada km");
+      String dataAtual = "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
+      String textoCorrida = "$dataAtual - $_distanciaFormatada km";
+      
+      // 1. Salva no celular (para exibir na hora)
+      historico.add(textoCorrida);
       await prefs.setStringList('historico_corridas', historico);
+
+      // 2. Salva na nuvem (Backup de segurança)
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        try {
+          await FirebaseDatabaseService().salvarDado('usuarios_corridas/${user.uid}', {
+            'texto': textoCorrida,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+          });
+        } catch (e) {
+          debugPrint('Erro salvando corrida na nuvem: $e');
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -229,7 +240,6 @@ class _CorridaViewState extends State<CorridaView> {
     return Scaffold(
       body: Column(
         children: [
-          // MAPA
           Expanded(
             flex: 4,
             child: Stack(
@@ -242,8 +252,7 @@ class _CorridaViewState extends State<CorridaView> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.academapp.app',
                     ),
                     PolylineLayer(
@@ -281,10 +290,7 @@ class _CorridaViewState extends State<CorridaView> {
                     left: 20,
                     right: 20,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 8,
-                        horizontal: 16,
-                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(20),
@@ -295,16 +301,10 @@ class _CorridaViewState extends State<CorridaView> {
                           SizedBox(
                             width: 16,
                             height: 16,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                           ),
                           SizedBox(width: 10),
-                          Text(
-                            'Procurando satélite...',
-                            style: TextStyle(color: Colors.white, fontSize: 12),
-                          ),
+                          Text('Procurando satélite...', style: TextStyle(color: Colors.white, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -313,7 +313,6 @@ class _CorridaViewState extends State<CorridaView> {
             ),
           ),
 
-          // Painel inferior
           Expanded(
             flex: 5,
             child: Container(
@@ -330,26 +329,11 @@ class _CorridaViewState extends State<CorridaView> {
                       children: [
                         Text(
                           _distanciaFormatada,
-                          style: TextStyle(
-                            fontSize: 80,
-                            fontWeight: FontWeight.bold,
-                            color: corTextoPainel,
-                            height: 1.0,
-                          ),
+                          style: TextStyle(fontSize: 80, fontWeight: FontWeight.bold, color: corTextoPainel, height: 1.0),
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(
-                            bottom: 15.0,
-                            left: 5.0,
-                          ),
-                          child: Text(
-                            'km',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: corTextoPainel,
-                            ),
-                          ),
+                          padding: const EdgeInsets.only(bottom: 15.0, left: 5.0),
+                          child: Text('km', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: corTextoPainel)),
                         ),
                       ],
                     ),
@@ -359,71 +343,29 @@ class _CorridaViewState extends State<CorridaView> {
                       children: [
                         Column(
                           children: [
-                            Text(
-                              _tempoFormatado,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: corTextoPainel,
-                              ),
-                            ),
-                            Text(
-                              'MINUTOS',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: corTextoPainel.withValues(alpha: 0.7),
-                                letterSpacing: 1.5,
-                              ),
-                            ),
+                            Text(_tempoFormatado, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: corTextoPainel)),
+                            Text('MINUTOS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: corTextoPainel.withValues(alpha: 0.7), letterSpacing: 1.5)),
                           ],
                         ),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: isDark ? Colors.grey[700]! : Colors.white30,
-                        ),
+                        Container(width: 1, height: 40, color: isDark ? Colors.grey[700]! : Colors.white30),
                         Column(
                           children: [
-                            Text(
-                              _caloriasQueimadas,
-                              style: TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                color: corTextoPainel,
-                              ),
-                            ),
-                            Text(
-                              'CALORIAS',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: corTextoPainel.withValues(alpha: 0.7),
-                                letterSpacing: 1.5,
-                              ),
-                            ),
+                            Text(_caloriasQueimadas, style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: corTextoPainel)),
+                            Text('CALORIAS', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: corTextoPainel.withValues(alpha: 0.7), letterSpacing: 1.5)),
                           ],
                         ),
                       ],
                     ),
 
                     GestureDetector(
-                      onTap: _estaCorrendo
-                          ? _pararESalvarCorrida
-                          : _iniciarCorrida,
+                      onTap: _estaCorrendo ? _pararESalvarCorrida : _iniciarCorrida,
                       child: Container(
                         width: 120,
                         height: 50,
                         decoration: BoxDecoration(
                           color: isDark ? corDestaque : Colors.white,
                           borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10, offset: const Offset(0, 5))],
                         ),
                         child: Center(
                           child: AnimatedContainer(
@@ -432,9 +374,7 @@ class _CorridaViewState extends State<CorridaView> {
                             height: _estaCorrendo ? 20 : 25,
                             decoration: BoxDecoration(
                               color: isDark ? corTextoPainel : Colors.red,
-                              borderRadius: BorderRadius.circular(
-                                _estaCorrendo ? 5 : 15,
-                              ),
+                              borderRadius: BorderRadius.circular(_estaCorrendo ? 5 : 15),
                             ),
                           ),
                         ),

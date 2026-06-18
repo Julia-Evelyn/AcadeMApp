@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:academyapp/core/database_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/services/audio/alarm_audio_service.dart';
 import '../../../core/services/preferences/app_preferences_service.dart';
@@ -72,8 +72,8 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> carregarProgressoSemanal() async {
-    final dbHelper = DatabaseHelper();
-    final atividades = await dbHelper.buscarTodasAtividades();
+    final prefs = await SharedPreferences.getInstance();
+    final historico = prefs.getStringList('historico_corridas') ?? [];
 
     List<double> semana = List.filled(7, 0.0);
     final agora = DateTime.now();
@@ -85,27 +85,39 @@ class HomeController extends ChangeNotifier {
       inicioDaSemana.day,
     );
 
-    for (var item in atividades) {
-      final dataStr = item['data_hora'] as String;
-      final distancia = (item['distancia_km'] as num).toDouble();
-
+    for (String corrida in historico) {
       try {
-        final dataFormatada = DateTime.parse(dataStr);
+        final partes = corrida.split(' - ');
+        if (partes.length < 2) continue;
 
-        if (dataFormatada.isAfter(inicioDaSemanaLimpo) ||
-            dataFormatada.isAtSameMomentAs(inicioDaSemanaLimpo)) {
-          int diaIndex = dataFormatada.weekday % 7;
-          semana[diaIndex] += distancia;
+        final dataStr = partes[0].trim();
+        
+        final distanciaStr = partes[1].replaceAll(' km', '').replaceAll(',', '.').trim();
+        final distancia = double.tryParse(distanciaStr) ?? 0.0;
+
+        final dataPartes = dataStr.split('/');
+        if (dataPartes.length == 3) {
+          final dia = int.parse(dataPartes[0]);
+          final mes = int.parse(dataPartes[1]);
+          final ano = int.parse(dataPartes[2].length == 2 ? '20${dataPartes[2]}' : dataPartes[2]);
+          
+          final dataFormatada = DateTime(ano, mes, dia);
+
+          if (dataFormatada.isAfter(inicioDaSemanaLimpo) ||
+              dataFormatada.isAtSameMomentAs(inicioDaSemanaLimpo)) {
+            int diaIndex = dataFormatada.weekday % 7;
+            semana[diaIndex] += distancia;
+          }
         }
       } catch (e) {
-        debugPrint('Erro ao ler data da atividade: $e');
+        debugPrint('Erro ao ler corrida do SharedPreferences pro gráfico: $e');
       }
     }
 
     distanciasSemana = semana;
     notifyListeners();
   }
-
+  
   String get tempoFormatado {
     final minutos = tempoRestanteSegundos ~/ 60;
     final segundos = tempoRestanteSegundos % 60;
@@ -125,37 +137,52 @@ class HomeController extends ChangeNotifier {
     if (estaRodando) {
       _timer?.cancel();
       estaRodando = false;
-      notifyListeners();
-      return;
-    }
-
-    estaRodando = true;
-    notifyListeners();
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (tempoRestanteSegundos > 0) {
-        tempoRestanteSegundos--;
-        notifyListeners();
-        return;
-      }
-
+    } else {
+      estaRodando = true;
       _timer?.cancel();
-      estaRodando = false;
-      tempoRestanteSegundos = minutosEscolhidos * 60;
-      movimentoPendente = true;
-      notifyListeners();
-      unawaited(_alarmAudioService.playLoop('audio/alarme.mp3'));
-    });
+      
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (tempoRestanteSegundos > 0) {
+          tempoRestanteSegundos--;
+        } else {
+          _timer?.cancel();
+          estaRodando = false;
+          movimentoPendente = true;
+          tocarAlarmeInatividade();
+        }
+        notifyListeners();
+      });
+    }
+    notifyListeners();
   }
 
-  Future<void> resetarTimer() async {
+  void resetarTimer() {
     _timer?.cancel();
-    await _alarmAudioService.stop();
     estaRodando = false;
     tempoRestanteSegundos = minutosEscolhidos * 60;
     movimentoPendente = false;
     notifyListeners();
   }
+
+
+  void tocarAlarmeInatividade() {
+    try {
+      _alarmAudioService.playLoop('audio/alarme.mp3');
+    } catch (e) {
+      debugPrint('Erro ao disparar áudio de inatividade: $e');
+    }
+  }
+
+  Future<void> confirmarAlertaDeMovimento() async {
+    try {
+      await _alarmAudioService.stop();
+    } catch (e) {
+      debugPrint('Erro ao parar áudio: $e');
+    }
+    movimentoPendente = false;
+    notifyListeners();
+  }
+
 
   Future<void> mudarTempo(int novosMinutos) async {
     _timer?.cancel();
@@ -166,21 +193,6 @@ class HomeController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> confirmarAlertaDeMovimento() async {
-    await _finalizarAlertaEReiniciarTimer();
-  }
-
-  Future<void> _finalizarAlertaEReiniciarTimer() async {
-    await _alarmAudioService.stop();
-    movimentoPendente = false;
-
-    if (!estaRodando) {
-      iniciarOuPausarTimer();
-    } else {
-      notifyListeners();
-    }
-  }
-
   void atualizarMovimentoCamera(bool movendo) {
     if (estaMovendo == movendo) {
       return;
@@ -188,17 +200,13 @@ class HomeController extends ChangeNotifier {
 
     estaMovendo = movendo;
     notifyListeners();
-
-    if (movendo && movimentoPendente) {
-      unawaited(_finalizarAlertaEReiniciarTimer());
-    }
   }
 
   @override
   void dispose() {
     _authSubscription.cancel();
     _timer?.cancel();
-    unawaited(_alarmAudioService.dispose());
+    _alarmAudioService.dispose().ignore();
     super.dispose();
   }
 }

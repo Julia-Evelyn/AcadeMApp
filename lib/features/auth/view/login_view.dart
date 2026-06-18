@@ -14,23 +14,21 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   void dispose() {
-    _controller.dispose(); // Limpa a memória quando sair da tela
+    _controller.dispose();
     super.dispose();
   }
 
-  // Função que faz a ponte entre o botão e o Controller
   Future<void> _lidarComAutenticacao() async {
     final erro = await _controller.autenticar();
 
     if (!mounted) return;
 
     if (erro != null) {
-      // Deu erro: mostra o alerta vermelho
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(erro), backgroundColor: Colors.redAccent),
       );
     } else {
-      Navigator.pop(context);
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     }
   }
 

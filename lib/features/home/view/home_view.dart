@@ -1,10 +1,10 @@
-import 'dart:math'; // Importante para calcular a maior distância dinâmica do gráfico
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../controller/home_controller.dart';
-import 'camera_motion_detector.dart';
+import 'sensor_movimento_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key, required this.controller});
@@ -176,27 +176,64 @@ class _HomeViewState extends State<HomeView> {
             ],
           ),
           content: const Text(
-            'Está na hora de se mexer!\nVocê atingiu seu limite de inatividade.',
+            'Está na hora de se mexer!\nVocê atingiu seu limite de inatividade. Deseja iniciar uma atividade agora?',
             style: TextStyle(fontSize: 16, height: 1.3),
           ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await widget.controller.confirmarAlertaDeMovimento();
+
+                widget.controller.resetarTimer();
+              },
+              child: const Text(
+                'Cancelar',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                  fontWeight: FontWeight.bold,
                 ),
-                onPressed: () async {
-                  Navigator.pop(context);
-                  await widget.controller.confirmarAlertaDeMovimento();
-                },
-                child: const Text(
-                  'Entendido!',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                await widget.controller.confirmarAlertaDeMovimento();
+
+                widget.controller.resetarTimer();
+
+                if (context.mounted) {
+                  final sucesso = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          SensorMovimentoView(controller: widget.controller),
+                    ),
+                  );
+
+                  widget.controller.resetarTimer();
+
+                  if (sucesso == true) {
+                    widget.controller.iniciarOuPausarTimer();
+                  }
+                }
+              },
+              child: const Text(
+                'Ok',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -205,15 +242,11 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  // WIDGET DO GRÁFICO SEMANAL
   Widget _buildGraficoSemanal(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final corDestaque = Theme.of(context).colorScheme.primary;
-
-    // Captura a lista de distâncias calculadas pelo controller
     final dadosSemana = widget.controller.distanciasSemana;
 
-    // Calcula automaticamente o teto ideal do gráfico baseado na maior corrida realizada
     double maiorDistancia = dadosSemana.isNotEmpty
         ? dadosSemana.reduce(max)
         : 0.0;
@@ -256,7 +289,9 @@ class _HomeViewState extends State<HomeView> {
             'Quilômetros percorridos nesta semana',
             style: TextStyle(color: Colors.grey[600], fontSize: 14),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(
+            height: 35,
+          ), // Aumentei o espaçamento para caber os textos
           SizedBox(
             height: 180,
             child: BarChart(
@@ -264,14 +299,24 @@ class _HomeViewState extends State<HomeView> {
                 alignment: BarChartAlignment.spaceAround,
                 maxY: tetoGrafico,
                 barTouchData: BarTouchData(
+                  enabled:
+                      false, // Desativa o toque para mostrar os tooltips permanentemente
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => Colors.black87,
+                    getTooltipColor: (_) =>
+                        Colors.transparent, // Fundo transparente
+                    tooltipPadding: EdgeInsets.zero,
+                    tooltipMargin: 8, // Margem entre a barra e o texto
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      // Se for 0.0, não mostra o texto para não poluir
+                      if (rod.toY == 0) return null;
                       return BarTooltipItem(
-                        '${rod.toY.toStringAsFixed(1)} km',
-                        const TextStyle(
-                          color: Colors.white,
+                        rod.toY.toStringAsFixed(
+                          1,
+                        ), // Exibe o valor com 1 casa decimal (ex: 5.2)
+                        TextStyle(
+                          color: corDestaque, // Cor do texto igual a da barra
                           fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       );
                     },
@@ -282,11 +327,9 @@ class _HomeViewState extends State<HomeView> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 30, // 👈 ADICIONE ESTA LINHA AQUI
                       getTitlesWidget: (value, meta) {
-                        // Ordem iniciada no Domingo (0) para alinhar com o mapeamento index % 7
                         const dias = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-
-                        // Verifica se a barra sendo renderizada corresponde ao dia de hoje
                         bool isHoje =
                             (DateTime.now().weekday % 7) == value.toInt();
 
@@ -321,6 +364,8 @@ class _HomeViewState extends State<HomeView> {
                 barGroups: List.generate(7, (index) {
                   return BarChartGroupData(
                     x: index,
+                    // ESTA É A LINHA MÁGICA: Força o tooltip a ficar sempre visível se a distância > 0
+                    showingTooltipIndicators: dadosSemana[index] > 0 ? [0] : [],
                     barRods: [
                       BarChartRodData(
                         toY: dadosSemana[index],
@@ -363,7 +408,6 @@ class _HomeViewState extends State<HomeView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // CABEÇALHO ATUALIZADO COM A FOTO REAL DO PERFIL
                   MergeSemantics(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -403,7 +447,6 @@ class _HomeViewState extends State<HomeView> {
                               shape: BoxShape.circle,
                               color: corDestaque.withValues(alpha: 0.15),
                               border: Border.all(color: corDestaque, width: 2),
-                              // Exibe a imagem salva localmente caso ela exista
                               image: widget.controller.imagemDoPerfil != null
                                   ? DecorationImage(
                                       image: FileImage(
@@ -433,18 +476,6 @@ class _HomeViewState extends State<HomeView> {
                       fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 30),
-
-                  Text(
-                    'Sensor de Movimento',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  CameraMotionDetector(controller: widget.controller),
                   const SizedBox(height: 35),
 
                   Text(
@@ -669,7 +700,6 @@ class _HomeViewState extends State<HomeView> {
                   ),
                   const SizedBox(height: 35),
 
-                  // GRÁFICO DINÂMICO RENDERIZADO NA TELA
                   _buildGraficoSemanal(context),
 
                   const SizedBox(height: 24),

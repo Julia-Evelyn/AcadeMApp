@@ -14,10 +14,13 @@ import 'features/configuracoes/view/configuracoes_view.dart';
 import 'features/historico_treinos/view/historico_treinos_view.dart';
 import 'features/treinos/controller/treino_provider.dart';
 import 'firebase_options.dart';
+import 'features/auth/view/splash_view.dart';
+import 'features/auth/view/auth_selection_view.dart';
+import 'features/auth/view/profile_setup_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   try {
     final preferencesStore = await SharedPreferencesStore.create();
 
@@ -25,19 +28,20 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     await Firebase.initializeApp();
-
+  
     final dbService = FirebaseDatabaseService();
     final preferencesService = AppPreferencesService(
       preferencesStore,
       dbService,
     );
 
+    final bool usaFonteDislexia = await preferencesService.loadUsarFonteDislexia();
+
     final themeController = ThemeController(
       preferencesService: preferencesService,
       initialThemeMode: await preferencesService.loadThemeMode(),
-      initialAccentColor: Color(
-        await preferencesService.loadAccentColorValue(),
-      ),
+      initialAccentColor: Color(await preferencesService.loadAccentColorValue()),
+      initialUsarFonteDislexia: usaFonteDislexia, // INJETANDO NO CONTROLLER
     );
 
     runApp(
@@ -55,6 +59,7 @@ Future<void> main() async {
       ),
     );
   } catch (e, stackTrace) {
+    runApp(MaterialApp(home: Scaffold(body: Center(child: Text('Erro fatal: $e')))));
     debugPrint('ERRO FATAL DETECTADO: $e');
     debugPrint('$stackTrace');
   }
@@ -80,17 +85,27 @@ class MyApp extends StatelessWidget {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'AcadeMApp',
-          theme: AppTheme.getLightTheme(themeController.corDestaque),
-          darkTheme: AppTheme.getDarkTheme(themeController.corDestaque),
+          
+          theme: AppTheme.getLightTheme(
+            themeController.corDestaque, 
+            usarFonteDislexia: themeController.usarFonteDislexia,
+          ),
+          darkTheme: AppTheme.getDarkTheme(
+            themeController.corDestaque, 
+            usarFonteDislexia: themeController.usarFonteDislexia,
+          ),
           themeMode: themeController.themeMode,
-          initialRoute: '/home',
+          
+          home: const SplashView(),
+          
           routes: {
+            '/auth_selection': (context) => const AuthSelectionView(),
+            '/profile_setup': (context) => const ProfileSetupView(isGuest: true),
             '/home': (context) => MainLayout(
-              preferencesService: preferencesService,
-              profileImagePickerService: profileImagePickerService,
-            ),
-            '/configuracoes': (context) =>
-                ConfiguracoesView(themeController: themeController),
+                  preferencesService: preferencesService,
+                  profileImagePickerService: profileImagePickerService,
+                ),
+            '/configuracoes': (context) => ConfiguracoesView(themeController: themeController),
             '/historico_treinos': (context) => const HistoricoView(),
           },
         );

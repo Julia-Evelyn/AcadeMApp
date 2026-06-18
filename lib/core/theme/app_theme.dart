@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static ThemeData getLightTheme(Color corDestaque) {
-    // Cria a paleta garantindo que a cor primária seja a cor escolhida
+  static ThemeData getLightTheme(Color corDestaque, {bool usarFonteDislexia = false}) {
     final scheme = ColorScheme.fromSeed(
       seedColor: corDestaque,
       primary: corDestaque, 
@@ -11,6 +11,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: usarFonteDislexia ? GoogleFonts.lexend().fontFamily : null,
       colorScheme: scheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
@@ -25,7 +26,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData getDarkTheme(Color corDestaque) {
+  static ThemeData getDarkTheme(Color corDestaque, {bool usarFonteDislexia = false}) {
     final scheme = ColorScheme.fromSeed(
       seedColor: corDestaque,
       primary: corDestaque, 
@@ -34,6 +35,7 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
+      fontFamily: usarFonteDislexia ? GoogleFonts.lexend().fontFamily : null,
       colorScheme: scheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
