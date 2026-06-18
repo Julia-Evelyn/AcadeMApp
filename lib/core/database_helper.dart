@@ -21,6 +21,11 @@ class DatabaseHelper {
     );
   }
 
+  Future<List<Map<String, dynamic>>> buscarTodasAtividades() async {
+    final db = await inicializarBanco();
+    return await db.query('RegistroAtividade');
+  }
+
   // Função básica para inserir uma corrida (CRUD - Create)
   Future<void> inserirAtividade(double distancia, String data) async {
     final db = await inicializarBanco();

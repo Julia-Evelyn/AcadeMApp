@@ -10,6 +10,10 @@ class MockDatabaseService implements DatabaseService {
   }
 
   @override
+  Future<void> deletarDado(String path, String id) async {
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> buscarDados(String colecao) async {
     return List<Map<String, dynamic>>.from(_fakeDatabase);
   }

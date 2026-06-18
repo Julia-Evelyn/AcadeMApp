@@ -3,58 +3,75 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import '../../../core/services/media/profile_image_picker_service.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/services/preferences/app_preferences_service.dart';
 import '../model/perfil_data.dart';
 
 class PerfilController extends ChangeNotifier {
-  PerfilController({
-    required AppPreferencesService preferencesService,
-    required ProfileImagePickerService imagePickerService,
-  }) : _preferencesService = preferencesService,
-       _imagePickerService = imagePickerService {
-    carregarDadosSalvos();
-    _escutarAutenticacao();
+  PerfilController(this._preferencesService) {
+    carregarPerfil();
+
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      user,
+    ) async {
+      if (user != null) {
+        await _preferencesService.forcarSincronizacao(user);
+        await carregarPerfil();
+      }
+    });
   }
 
   final AppPreferencesService _preferencesService;
-  final ProfileImagePickerService _imagePickerService;
+  late StreamSubscription<User?> _authSubscription;
+
+  User? get usuarioAtual => FirebaseAuth.instance.currentUser;
+
+  bool estaEditando = false;
+  File? imagemDoPerfil;
+  String? _caminhoImagemLocal;
 
   final nomeController = TextEditingController();
   final sobrenomeController = TextEditingController();
   final pesoController = TextEditingController();
   final alturaController = TextEditingController();
 
-  bool estaEditando = false;
-  File? imagemDoPerfil;
-  
-  User? usuarioAtual; 
-  StreamSubscription<User?>? _authSubscription;
+  String get nomeCompleto {
+    final nome = nomeController.text.trim();
+    final sobrenome = sobrenomeController.text.trim();
+    if (nome.isEmpty && sobrenome.isEmpty) return 'Atleta';
+    return '$nome $sobrenome'.trim();
+  }
 
-  Future<void> carregarDadosSalvos() async {
+  String get pesoFormatado {
+    final peso = pesoController.text.trim();
+    if (peso.isEmpty) return '';
+    return '$peso kg';
+  }
+
+  String get alturaFormatada {
+    final altura = alturaController.text.trim();
+    if (altura.isEmpty) return '';
+    return '$altura cm';
+  }
+
+  Future<void> carregarPerfil() async {
     final perfil = await _preferencesService.loadPerfilData();
+
     nomeController.text = perfil.nome;
     sobrenomeController.text = perfil.sobrenome;
     pesoController.text = perfil.peso;
     alturaController.text = perfil.altura;
+    _caminhoImagemLocal = perfil.caminhoImagem;
 
-    if (perfil.caminhoImagem != null && perfil.caminhoImagem!.isNotEmpty) {
-      imagemDoPerfil = File(perfil.caminhoImagem!);
+    if (_caminhoImagemLocal != null && _caminhoImagemLocal!.isNotEmpty) {
+      final file = File(_caminhoImagemLocal!);
+      if (await file.exists()) {
+        imagemDoPerfil = file;
+      } else {
+        imagemDoPerfil = null;
+      }
     }
-
     notifyListeners();
-  }
-
-  void _escutarAutenticacao() {
-    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((User? user) {
-      usuarioAtual = user;
-      notifyListeners();
-    });
-  }
-
-  Future<void> deslogar() async {
-    await FirebaseAuth.instance.signOut();
   }
 
   void iniciarEdicao() {
@@ -62,53 +79,62 @@ class PerfilController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> pegarImagem(ImageSource source) async {
-    final imagem = await _imagePickerService.pickImage(source);
-    if (imagem == null) {
-      return;
-    }
-
-    imagemDoPerfil = imagem;
-    notifyListeners();
-    
-    await salvarPerfil();
-  }
-
   Future<void> salvarPerfil() async {
-    await _preferencesService.savePerfilData(
-      PerfilData(
-        nome: nomeController.text,
-        sobrenome: sobrenomeController.text,
-        peso: pesoController.text,
-        altura: alturaController.text,
-        caminhoImagem: imagemDoPerfil?.path,
-      ),
-    );
-
     estaEditando = false;
     notifyListeners();
+
+    final perfil = PerfilData(
+      nome: nomeController.text.trim(),
+      sobrenome: sobrenomeController.text.trim(),
+      peso: pesoController.text.trim(),
+      altura: alturaController.text.trim(),
+      caminhoImagem: _caminhoImagemLocal,
+    );
+
+    await _preferencesService.savePerfilData(perfil);
+    notifyListeners();
   }
 
-  String get nomeCompleto {
-    if (nomeController.text.isEmpty && sobrenomeController.text.isEmpty) {
-      return usuarioAtual != null ? 'Atleta PRO' : 'Visitante';
+  Future<void> pegarImagem(ImageSource source) async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: source);
+
+    if (pickedFile != null) {
+      // Copia a imagem da pasta temporária para a pasta de documentos permanente do app
+      final appDir = await getApplicationDocumentsDirectory();
+      final fileName =
+          'foto_perfil_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final savedImage = await File(
+        pickedFile.path,
+      ).copy('${appDir.path}/$fileName');
+
+      // Remove a foto antiga se existir para não ocupar espaço desnecessário
+      if (_caminhoImagemLocal != null) {
+        final oldFile = File(_caminhoImagemLocal!);
+        if (await oldFile.exists()) {
+          await oldFile.delete();
+        }
+      }
+
+      imagemDoPerfil = savedImage;
+      _caminhoImagemLocal = savedImage.path;
+
+      if (!estaEditando) {
+        await salvarPerfil();
+      } else {
+        notifyListeners();
+      }
     }
-    return '${nomeController.text} ${sobrenomeController.text}'.trim();
   }
 
-  String get pesoFormatado {
-    return pesoController.text.isNotEmpty ? '${pesoController.text} kg' : '';
-  }
-
-  String get alturaFormatada {
-    return alturaController.text.isNotEmpty
-        ? '${alturaController.text} cm'
-        : '';
+  Future<void> deslogar() async {
+    await FirebaseAuth.instance.signOut();
+    notifyListeners();
   }
 
   @override
   void dispose() {
-    _authSubscription?.cancel();
+    _authSubscription.cancel();
     nomeController.dispose();
     sobrenomeController.dispose();
     pesoController.dispose();

@@ -12,19 +12,22 @@ dependencies:
   firebase_auth: ^6.5.2
   firebase_core: ^4.10.0
   flutter:
-    sdk: flutter
+    sdk: flutter   
   flutter_map: ^8.3.0
   geolocator: ^14.0.2
   http: ^1.6.0
   image_picker: ^1.2.2
   latlong2: ^0.9.1
   path: ^1.9.1
+  path_provider: ^2.1.0
   camera: ^0.11.0+1
   permission_handler: ^12.0.3
   provider: ^6.1.5+1
   sensors_plus: ^7.0.0
   shared_preferences: ^2.5.5
   sqflite: ^2.4.2+1
+  fl_chart: ^1.2.0
+  google_fonts: ^6.2.0
 
 dev_dependencies:
   flutter_test:
@@ -33,7 +36,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
 
   assets:
     - assets/audio/

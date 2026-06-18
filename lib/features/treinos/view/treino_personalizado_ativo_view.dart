@@ -2,24 +2,21 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 
-class TreinoAtivoView extends StatefulWidget {
+class TreinoPersonalizadoAtivoView extends StatefulWidget {
   final Map<String, dynamic> treino;
-
-  const TreinoAtivoView({super.key, required this.treino});
+  const TreinoPersonalizadoAtivoView({super.key, required this.treino});
 
   @override
-  State<TreinoAtivoView> createState() => _TreinoAtivoViewState();
+  State<TreinoPersonalizadoAtivoView> createState() =>
+      _TreinoPersonalizadoAtivoViewState();
 }
 
-class _TreinoAtivoViewState extends State<TreinoAtivoView> {
-  late int _tempoExercicio;
-  late int _tempoDescanso;
-  late int _totalSeries;
-
-  int _serieAtual = 1;
-  bool _estaDescansando = false;
-  late int _tempoRestante;
-  bool _estaRodando = false;
+class _TreinoPersonalizadoAtivoViewState
+    extends State<TreinoPersonalizadoAtivoView> {
+  late List<dynamic> _exercicios;
+  int _currentIndex = 0;
+  int _tempoRestante = 0;
+  bool _rodando = false;
   Timer? _timer;
 
   final AudioPlayer _audioPlayer = AudioPlayer();
@@ -27,11 +24,10 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
   @override
   void initState() {
     super.initState();
-    _tempoExercicio = widget.treino['duracao'] ?? 30;
-    _tempoDescanso = widget.treino['descanso'] ?? 15;
-    _totalSeries = widget.treino['series'] ?? 3;
-
-    _tempoRestante = _tempoExercicio;
+    _exercicios = widget.treino['exercicios'] ?? [];
+    if (_exercicios.isNotEmpty) {
+      _tempoRestante = _exercicios[_currentIndex]['duracao'] ?? 0;
+    }
   }
 
   @override
@@ -51,46 +47,49 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
     }
   }
 
-  void _iniciarOuPausarTimer() {
-    if (_estaRodando) {
+  void _iniciarPausarTimer() {
+    if (_rodando) {
       _timer?.cancel();
-      setState(() => _estaRodando = false);
+      setState(() => _rodando = false);
     } else {
-      setState(() => _estaRodando = true);
+      setState(() => _rodando = true);
       _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        setState(() {
-          if (_tempoRestante > 0) {
-            _tempoRestante--;
-          } else {
-            _tocarApito();
-            _avancarFase();
-          }
-        });
+        if (_tempoRestante > 0) {
+          setState(() => _tempoRestante--);
+        } else {
+          _iniciarPausarTimer();
+          _tocarApito(); // Toca o apito padronizado ao fim do tempo
+          _avancar();
+        }
       });
     }
   }
 
-  void _avancarFase() {
-    if (!_estaDescansando) {
+  void _avancar() {
+    if (_currentIndex < _exercicios.length - 1) {
       setState(() {
-        _estaDescansando = true;
-        _tempoRestante = _tempoDescanso;
+        _currentIndex++;
+        _tempoRestante = _exercicios[_currentIndex]['duracao'] ?? 0;
+        _rodando = false;
       });
+      _timer?.cancel();
     } else {
-      if (_serieAtual < _totalSeries) {
-        setState(() {
-          _estaDescansando = false;
-          _serieAtual++;
-          _tempoRestante = _tempoExercicio;
-        });
-      } else {
-        _timer?.cancel();
-        _mostrarFimDeTreino();
-      }
+      _mostrarFimTreino();
     }
   }
 
-  void _mostrarFimDeTreino() {
+  void _voltar() {
+    if (_currentIndex > 0) {
+      setState(() {
+        _currentIndex--;
+        _tempoRestante = _exercicios[_currentIndex]['duracao'] ?? 0;
+        _rodando = false;
+      });
+      _timer?.cancel();
+    }
+  }
+
+  void _mostrarFimTreino() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -98,7 +97,7 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Center(child: Text('🎉 Parabéns!')),
         content: const Text(
-          'Você concluiu todas as séries deste exercício com sucesso!',
+          'Você concluiu todo o seu treino personalizado com sucesso!',
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 16),
         ),
@@ -118,10 +117,7 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                 Navigator.pop(context);
                 Navigator.pop(context);
               },
-              child: const Text(
-                'Concluir',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              child: const Text('Finalizar', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             ),
           ),
         ],
@@ -129,78 +125,68 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
     );
   }
 
-  String get _tempoFormatado {
-    int minutos = _tempoRestante ~/ 60;
-    int segundos = _tempoRestante % 60;
+  String _formatarTempo(int segundosTotais) {
+    final minutos = segundosTotais ~/ 60;
+    final segundos = segundosTotais % 60;
     return '${minutos.toString().padLeft(2, '0')}:${segundos.toString().padLeft(2, '0')}';
-  }
-
-  IconData _obterIconeDinamico(String objetivo) {
-    if (_estaDescansando) return Icons.timer;
-
-    final obj = objetivo.toLowerCase();
-    if (obj.contains('braços') || obj.contains('ombros')) {
-      return Icons.sports_gymnastics;
-    }
-    if (obj.contains('pernas') || obj.contains('quadríceps')) {
-      return Icons.directions_walk;
-    }
-    if (obj.contains('peito') || obj.contains('costas')) {
-      return Icons.accessibility_new;
-    }
-    if (obj.contains('abdominais')) return Icons.airline_seat_flat;
-    return Icons.fitness_center;
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_exercicios.isEmpty) {
+      return Scaffold(appBar: AppBar(title: const Text('Treino Vazio')));
+    }
+
     final tema = Theme.of(context);
     final isDark = tema.brightness == Brightness.dark;
     final corDestaque = tema.colorScheme.primary;
-    final corFase = _estaDescansando ? Colors.teal : corDestaque;
 
-    final String objetivoTreino = widget.treino['objetivo'] ?? '';
-    final IconData iconeTreino = _obterIconeDinamico(objetivoTreino);
+    final exercicioAtual = _exercicios[_currentIndex];
+    final bool isDescanso = exercicioAtual['isDescanso'] ?? false;
+    final corFase = isDescanso ? Colors.teal : corDestaque;
 
     return Scaffold(
-      backgroundColor: isDark
-          ? tema.colorScheme.surfaceContainerHighest
-          : Colors.white,
+      backgroundColor: isDark ? tema.colorScheme.surfaceContainerHighest : Colors.white,
       appBar: AppBar(
-        title: Text(
-          widget.treino['nome'] ?? 'Exercício',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: Text(widget.treino['nome'] ?? 'Treino Ativo', style: const TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
       body: Column(
         children: [
+          // 1. ÁREA SUPERIOR (MÍDIA / ÍCONE GIGANTE)
           SizedBox(
             width: double.infinity,
             height: 250,
             child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                padding: const EdgeInsets.all(40),
-                decoration: BoxDecoration(
-                  color: corFase.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(iconeTreino, size: 80, color: corFase),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(30),
+                    decoration: BoxDecoration(
+                      color: corFase.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isDescanso ? Icons.timer : Icons.fitness_center,
+                      size: 80,
+                      color: corFase,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
+          // 2. PAINEL INFERIOR (CONTROLES E TIMER) - IDÊNTICO À API
           Expanded(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(30),
               decoration: BoxDecoration(
                 color: tema.scaffoldBackgroundColor,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(40),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(40)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -212,18 +198,13 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
                       color: corFase.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _estaDescansando
-                          ? 'Modo Descanso'
-                          : 'Série $_serieAtual de $_totalSeries',
+                      'Etapa ${_currentIndex + 1} de ${_exercicios.length}',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -233,28 +214,40 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                   ),
                   const SizedBox(height: 20),
                   Text(
-                    _tempoFormatado,
+                    _formatarTempo(_tempoRestante),
                     style: TextStyle(
                       fontSize: 80,
                       fontWeight: FontWeight.w900,
-                      color: _tempoRestante == 0
-                          ? Colors.redAccent
-                          : tema.textTheme.bodyLarge?.color,
+                      color: _tempoRestante == 0 ? Colors.redAccent : tema.textTheme.bodyLarge?.color,
                       letterSpacing: 2,
                     ),
                   ),
                   Expanded(
                     child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        widget.treino['instrucoes'] ??
-                            'Mantenha a postura correta e respire de forma controlada.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: isDark ? Colors.grey[400] : Colors.grey[700],
-                          height: 1.5,
-                        ),
+                      child: Column(
+                        children: [
+                          Text(
+                            exercicioAtual['nome'] ?? (isDescanso ? 'Descanso' : 'Exercício'),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          if (!isDescanso) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              '${exercicioAtual['series']} Séries x ${exercicioAtual['repeticoes']} Repetições',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: isDark ? Colors.grey[400] : Colors.grey[700],
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
@@ -262,20 +255,12 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       IconButton(
-                        onPressed: () {
-                          _timer?.cancel();
-                          setState(() {
-                            _estaRodando = false;
-                            _tempoRestante = _estaDescansando
-                                ? _tempoDescanso
-                                : _tempoExercicio;
-                          });
-                        },
-                        icon: const Icon(Icons.refresh, size: 36),
-                        color: Colors.grey,
+                        onPressed: _currentIndex > 0 ? _voltar : null,
+                        icon: const Icon(Icons.skip_previous, size: 36),
+                        color: _currentIndex > 0 ? Colors.grey : Colors.grey.withValues(alpha: 0.3),
                       ),
                       GestureDetector(
-                        onTap: _iniciarOuPausarTimer,
+                        onTap: _iniciarPausarTimer,
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 300),
                           width: 80,
@@ -293,14 +278,14 @@ class _TreinoAtivoViewState extends State<TreinoAtivoView> {
                             ],
                           ),
                           child: Icon(
-                            _estaRodando ? Icons.pause : Icons.play_arrow,
+                            _rodando ? Icons.pause : Icons.play_arrow,
                             size: 40,
                             color: Colors.white,
                           ),
                         ),
                       ),
                       IconButton(
-                        onPressed: _avancarFase,
+                        onPressed: _avancar,
                         icon: const Icon(Icons.skip_next, size: 36),
                         color: Colors.grey,
                       ),
